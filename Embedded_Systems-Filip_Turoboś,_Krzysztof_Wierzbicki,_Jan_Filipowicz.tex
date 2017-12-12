@@ -1,0 +1,274 @@
+\documentclass[a4paper,12pt,twoside]{article}
+
+\usepackage[MeX]{polski}
+\usepackage[utf8]{inputenc}
+\usepackage[pdftex]{graphicx}
+\usepackage{color}
+\usepackage{url}
+\usepackage{tocbibind}
+\usepackage[]{units}
+\usepackage{amsmath}
+\usepackage{amsthm}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{longtable}
+\usepackage{bbm}
+\usepackage{listings}
+\usepackage{lmodern}
+\usepackage{tabu}
+\usepackage{tikz}
+\usepackage[htt]{hyphenat}
+\usepackage{todonotes}
+%\usepackage{hyperref}
+\usepackage{titlesec}
+\usepackage{mathtools}
+\usepackage{cite}
+\linespread{1.5}
+
+% marginesy, szerokość i wysokość tekstu-
+\setlength\topmargin{-0.25in}
+\setlength\textheight{9in}
+\setlength\headsep{0.2in}
+\setlength\footskip{0.5in}
+\setlength\oddsidemargin{0.4in}
+\setlength\evensidemargin{0in}
+\setlength\textwidth{5.8in}
+\setlength\headheight{15.3pt}
+\setlength\fboxsep{0pt}
+
+% definicje nagłówków
+%\usepackage{fancyhdr}
+\pagestyle{plain}
+%\renewcommand{\chaptermark}[1]{
+%	\markboth{\MakeUppercase{
+%			\chaptername\ \thechapter.
+%			\ #1}}{}}
+\newcommand{\Z}{\mathbbm{Z}}
+\newcommand{\e}{\varepsilon}
+\newcommand{\diam}{\operatorname{diam}}
+%\fancypagestyle{plain}{ % styl: tylko numery stron
+%	\fancyhf{}
+%	\fancyfoot[C]{\thepage} % stopka: numer strony pośrodku
+%	\renewcommand{\headrulewidth}{0pt}
+%	\renewcommand{\footrulewidth}{0pt}}
+
+%\fancypagestyle{headings}{% styl: numery stron i nagłówki
+%	\fancyhf{}
+%	\fancyhead[RO,LE]{\leftmark} % nagłówek prawo na nieparzystych, lewo na parzystych:
+	% nazwa rozdziału
+%	\fancyfoot[C]{\thepage} % stopka: numer strony pośrodku
+%	\renewcommand{\headrulewidth}{0.3pt}
+%	\renewcommand{\footrulewidth}{0pt}}
+\newcommand{\N}{\mathbbm{N}}
+\newcommand{\Q}{\mathbbm{Q}}
+\newcommand{\R}{\mathbbm{R}}
+\newcommand{\D}{\mathcal{D}}
+\newcommand{\card}{\operatorname{card}}
+\usepackage{etoolbox}
+\newcommand{\dd}{\delta}
+\makeatletter
+%\patchcmd{\epigraph}{\@epitext{#1}}{\itshape\@epitext{#1}}{}{}
+\makeatother
+\newcommand{\U}{\mathcal{U}}
+% Zawartość
+\newcommand{\B}{\mathcal{B}}
+\theoremstyle{plain}
+	\newtheorem{tw}{Twiedzenie}
+	\newtheorem{lem}{Lemat}
+\theoremstyle{definition}
+	\newtheorem{defi}{Definicja}
+	\newtheorem{ex}{Przykład}
+\theoremstyle{remark}
+	\newtheorem{obs}{Obserwacja}
+	\newtheorem{remark}{Uwaga}
+	\newtheorem{wniosek}{Wniosek}
+	\newcommand\smallc{
+		\mathchoice
+		{{\scriptstyle\mathcal{C}}}% \displaystyle
+		{{\scriptstyle\mathcal{C}}}% \textstyle
+		{{\scriptscriptstyle\mathcal{C}}}% \scriptstyle
+		{\scalebox{.7}{$\scriptscriptstyle\mathcal{C}$}}%\scriptscriptstyle
+	}
+\begin{document}
+\begin{titlepage}
+	\begin{flushleft}
+	\end{flushleft}
+	\begin{center}
+		\textsc{{\huge Politechnika \L\'odzka}}
+	\end{center}
+	\bigskip
+	\bigskip
+	\begin{center}
+		\textsc{{\Large Wydzia\l\ Fizyki Technicznej, Informatyki i~Matematyki Stosowanej}}
+	\end{center}
+	\bigskip
+	\bigskip
+	%\begin{center}
+	\begin{Large}
+		Kierunek: Informatyka\\   
+		Przedmiot: Systemy wbudowane %TU WPISZ SPECJALNOŚĆ% 
+	\end{Large}
+	%\end{center}
+	\bigskip
+	\bigskip
+	\bigskip
+	\bigskip
+	\begin{center}
+		\textsc{\textbf{{\Large Dokumentacja gry zręcznościowej Procesja$^{\textrm{TM}}$ %TU WPISZ TYTUŁ PRACY%
+					\\
+					LPC1343 + Expansion Board
+					}}}
+	\end{center}
+	\bigskip
+	\bigskip
+	\begin{flushright}
+		{\large 
+			lider: mgr Filip Turoboś %TU WPISZ SWOJE IMIĘ I NAZWISKO%
+			\\
+			Nr albumu: 
+			210344801147 %TU WPISZ SWÓJ NUMER ALBUMU%
+			\\
+			Jan Filipowicz %TU WPISZ SWOJE IMIĘ I NAZWISKO%
+			\\
+			Nr albumu: 
+			203875 %TU WPISZ SWÓJ NUMER ALBUMU%
+			\\
+			Krzysztof Wierzbicki %TU WPISZ SWOJE IMIĘ I NAZWISKO%
+			\\
+			Nr albumu: 
+			210347 %TU WPISZ SWÓJ NUMER ALBUMU%
+			\\
+		}
+	\end{flushright}
+	\noindent\hrulefill
+		\begin{center}
+		{\textsc{\large \L\'od\'z, \date{Listopad 2017} %TU WPISZ  MIESIĄC I ROK ODDANIA PRACY%
+			}}
+		\end{center}
+	\end{titlepage}	
+% !TeX spellcheck = pl_PL
+%\begin{titlepage}
+%
+%\begin{minipage}{0.19\textwidth}
+%\begin{flushleft}
+%\includegraphics[width=0.88\textwidth]{img/logo}
+%\end{flushleft}
+%\end{minipage}
+%\begin{minipage}[t][][t]{0.81\textwidth}
+%\begin{flushleft}
+%\vspace{-2\baselineskip}
+%\textbf{{\large Politechnika Łódzka}\\}
+%\vspace{\medskipamount}
+%\textbf{\large Wydział Fizyki Technicznej, Informatyki\\i~Matematyki Stosowanej}
+%\vspace{\medskipamount}\\ %oo
+%{\large Instytut Matematyki}\\
+%\end{flushleft}
+%\end{minipage}
+%\vspace{2.5cm}
+%
+%\begin{center}
+%{\Large {Filip Turoboś, 206799\\}}
+%\vspace{2cm}
+%{\huge{ {Przestrzenie wyposażone\\ w funkcje typu odległości}}}
+%\end{center}
+%\vspace{3cm}
+%\hfill
+%\begin{minipage}{.65\columnwidth}
+%Praca {magisterska}\\
+%Promotor: prof. dr hab. inż. Jacek Jachymski
+%\end{minipage}
+%\vfill
+%\begin{center}
+%Łódź {2017}
+%\end{center}
+%\end{titlepage}
+\tableofcontents
+\section{Podsumowanie i technikalia}
+\subsection{Skład zespołu}
+$\begin{array}{|l|l|l|}
+	\hline
+	\textrm{Funkcja:}& \textrm{Imię i nazwisko: }& \textrm{Nr albumu: }\\
+	\hline
+	\textrm{lider}& \textrm{Filip Turoboś}&\textrm{ 210344, 801147}\\
+	\hline
+	\textrm{członek}&\textrm{Jan Filipowicz}&\textrm{	203875 	}\\
+	\hline
+	\textrm{członek}&\textrm{Krzysztof Wierzbicki}& \textrm{210347}\\
+	\hline
+\end{array}$
+	% do poprawy
+\subsection{Wykorzystane funkcjonalności i ich autorzy}
+%\subsubsection{MCU}
+
+%\subsubsection{Urządzenia peryferyjne}
+\begin{itemize}
+	\item Timer
+\end{itemize}
+\subsubsection{Dokumentacja}
+Opis poszczególnych funkcjonalności: Filip Turoboś
+Skład i opracowanie całości dokumentu: Filip Turoboś
+
+\subsubsection{Procentowy udział poszczególnych członków zespołu w tworzeniu końcowej wersji projektu}
+$\begin{array}{|l|l|l|}
+\hline
+\textrm{Imię i nazwisko: }& \textrm{Procentowy udział: }\\
+\hline
+ \textrm{Filip Turoboś}&\textrm{ 30\%}\\
+\hline
+\textrm{Jan Filipowicz}&\textrm{	38\% 	}\\
+\hline
+\textrm{Krzysztof Wierzbicki}& \textrm{32\%}\\
+\hline
+\end{array}$
+\newpage
+\section{Skrótowy opis działania programu}
+Podczas gry w Procesja$^{\textrm{TM}}$ gracz manewruje przy pomocy joysticka i/lub akcelerometru białą łamaną symbolizującą procesję i stara się poruszać nią w taki sposób, aby:
+\begin{itemize}
+	\item nie przecinać tworzonej przez siebie łamanej (podzielenie płaszczyzny na dwa rozłączne zbiory otwarte kończy grę); 
+	\item zbierać pojawiające się na planszy kropki symbolizujące zbłąkane owieczki.
+\end{itemize}
+
+W przypadku gdy gracz najedzie łamaną na pulsującą kropkę, całość procesji zostaje przedłużona. Radując się z ilości zgromadzonych wiernych możemy odgrywać pieśń sakralną \textit{"Barka"} autorstwa Jana Pawła II.
+
+
+
+\subsection{Timer}
+Układ, który dekrementuje lub inkrementuje wartość jednego ze swoich rejestrów w zależności od częstotliwości otrzymywanego sygnału nazywamy \textbf{timerem}. Każdy timer jest wyposażony w dwa podstawowe rejestry -- licznik timera i rejestr kontroli timera. W przypadku płytki LPC 1343 timer jest dodatkowo wyposażony w preskaler. Zwiększenie licznika timera $(TC)$ -- \textit{timer counter} następuje po spełnieniu następujących warunków:
+\begin{itemize}
+\item Wartość rejestru preskalera $(PR)$ jest ustawiona na pewną wartość $K\in \N_0$ -- domyślnie $K=0$;
+\item 32-bitowy licznik preskalera $(PC)$ osiągnie wartość $K+1$;
+\end{itemize}
+Po inkrementacji $(TC)$ następuje wyzerowanie licznika preskalera.
+\subsection{GPIO}
+Skrót $(GPIO)$ oznacza \textit{General purpose input/output}, czyli interfejs wejścia/wyjścia ogólnego przeznaczenia. Przy pomocy $(GPIO)$ obsługiwany jest joystick, w który wyposażona jest płytka. Służy on do poruszania się instancją obiektu typu wąż, umożliwiając tym samym granie w grę.
+
+Aby używać joysticka musimy najpierw ustalić rolę odpowiednich pinów na \textit{INPUT}. W naszym przypadku stosowane jest port nr 2 i piny od $1$ do $4$, odpowiadających za poszczególne kierunki (odpowiednio dół/prawo/góra/lewo). 
+
+Posuszanie wężem polega na sprawdzaniu stanów poszczególnych pinów. Przykładowo, gdy ostatnio odczytany stan wysoki wystąpił na pinie nr 2, nasz wąż zacznie poruszać się w prawo (o ile jest to możliwe, tj. nie poruszał się uprzednio w lewo). Jeżeli nie jest odczytywany obecnie stan wysoki na żadnym z pinów, to wąż kontynuuje poruszanie się w ostatnio wybranym kierunku. W przypadku, gdy odczytany ruch jest przeciwny do obecnego, sygnał odebrany z $(GPIO)$ zostanie zignorowany.
+
+\subsection{ADC}
+\textit{Analog-Digital Converter}
+
+\subsection{SPI/SSP}
+\textit{Synchronous Serial Port} -- wyświetlacz
+
+\subsection{I$^2$C}
+
+\subsection{Przerwania (Interrupts)}
+
+\section{Analiza FMEA}
+
+\begin{center}
+	\begin{tabular}{|c|c|c|}\hline
+		Możliwa awaria & Prawdopodobieństwo & Reakcja\\ \hline\hline % <-- note that two \hlines produce a double line
+		Michael Gustafson & mrg@duke.edu& xD\\ \hline
+		Michael Ehrenfried & mje7@duke.edu &Xd\\ \hline
+	\end{tabular}
+\end{center}
+\section{Wykorzystane noty katalogowe, dokumentacja i literatura}
+
+\end{document}
+
+
+
+		%Charakteryzacja metryczności przez kulę otwartą.
