@@ -72,10 +72,9 @@ typedef enum{CENTER, UP, DOWN, RIGHT, LEFT} directions;
 **
 ** Returned value:                None
 *****************************************************************************/
+#define LEVEL_WIDTH (uint8_t)(OLED_DISPLAY_WIDTH / 3)
+#define LEVEL_HEIGHT (uint8_t)(OLED_DISPLAY_HEIGHT / 3)
 static void processSnake (uint8_t controlsState) {
-		static const uint8_t width = OLED_DISPLAY_WIDTH / 3;
-		static const uint8_t height = OLED_DISPLAY_HEIGHT / 3;
-
         static uint8_t virgin = TRUE; //is set to FALSE after first call
         static uint8_t dir = 0;
 
@@ -84,38 +83,45 @@ static void processSnake (uint8_t controlsState) {
                 int16_t y;
         } Vector2;
 
+		static uint8_t hasSnake[LEVEL_HEIGHT][LEVEL_WIDTH] = {};
+
         static const Vector2 direction[4] = {{0, -1}, {0, 1}, {-1, 0}, {1, 0}}; //up, down, left, right
         static Vector2 snake[maxSnakeLength] = {};
         static uint16_t currentHead = 0;
-        static uint16_t currentLength = 8;
-        static Vector2 dot = {};
+        static uint16_t currentLength = 5;
+        static Vector2 dot;
         static uint8_t dotBlink = 0;
 
     //at first call create snake and put dot
         if (virgin) {
                 virgin = FALSE;
                 for (int i = currentLength; i>0; i--) {
-                        snake[i].x = 48;
-                        snake[i].y = 32;
+                        snake[i].x = OLED_DISPLAY_WIDTH / 2;
+                        snake[i].y = OLED_DISPLAY_HEIGHT / 2;
                 }
-                dot.x = rand() % width;
-                dot.y = rand() % height;
+                dot.x = rand() % LEVEL_WIDTH;
+                dot.y = rand() % LEVEL_HEIGHT;
         }
 
         //get dir index from controlsState
         if (controlsState & JOYSTICK_UP) {
-            dir = 0;
+        	if (dir != 1)
+        		dir = 0;
         } else if (controlsState & JOYSTICK_DOWN) {
-            dir = 1;
+        	if (dir != 0)
+        		dir = 1;
         } else if (controlsState & JOYSTICK_LEFT) {
-            dir = 2;
+        	if (dir != 3)
+        		dir = 2;
         } else if (controlsState & JOYSTICK_RIGHT) {
-            dir = 3;
+        	if (dir != 2)
+        		dir = 3;
         }
 
         //erase tail
         uint16_t tail = (currentHead + 1) % currentLength;
         putSquare(snake[tail].x, snake[tail].y, OLED_COLOR_BLACK);
+        hasSnake[snake[tail].y][snake[tail].x] = FALSE;
 
         //make head
         snake[tail].x = snake[currentHead].x + direction[dir].x;
@@ -124,12 +130,12 @@ static void processSnake (uint8_t controlsState) {
 
         //wind snake around screen
         if (snake[currentHead].x < 0)
-                snake[currentHead].x = width - 1;
+                snake[currentHead].x = LEVEL_WIDTH - 1;
         if (snake[currentHead].y < 0)
-                snake[currentHead].y = height - 1;
-        if (snake[currentHead].x == width)
+                snake[currentHead].y = LEVEL_HEIGHT - 1;
+        if (snake[currentHead].x == LEVEL_WIDTH)
                 snake[currentHead].x = 0;
-        if (snake[currentHead].y == height)
+        if (snake[currentHead].y == LEVEL_HEIGHT)
                 snake[currentHead].y = 0;
 
         //calculate head to dot distance
@@ -155,15 +161,30 @@ static void processSnake (uint8_t controlsState) {
                 }
                 //put new dot
                 putSquare(dot.x, dot.y, OLED_COLOR_BLACK);
-                dot.x = rand() % width;
-                dot.y = rand() % height;
+                dot.x = rand() % LEVEL_WIDTH;
+                dot.y = rand() % LEVEL_HEIGHT;
         } else {
             	//blink dot
         		putSquare(dot.x, dot.y, (oled_color_t)(dotBlink ^= 1));
         }
 
-    //put snake head
-        putSquare(snake[currentHead].x, snake[currentHead].y, OLED_COLOR_WHITE);
+        if (hasSnake[snake[currentHead].y][snake[currentHead].x]) {
+        	//die
+        	virgin = TRUE;
+        	dir = 0;
+        	for (int i = 0; i < currentLength; i++) {
+    			putSquare(snake[i].x, snake[i].y, OLED_COLOR_BLACK);
+        		hasSnake[snake[i].y][snake[i].x] = FALSE;
+        	}
+        	currentHead = 0;
+        	currentLength = 5;
+        	dotBlink = 0;
+        	putSquare(dot.x, dot.y, OLED_COLOR_BLACK);
+        } else {
+            //put head
+			putSquare(snake[currentHead].x, snake[currentHead].y, OLED_COLOR_WHITE);
+			hasSnake[snake[currentHead].y][snake[currentHead].x] = TRUE;
+        }
 }
 
 void blinkLEDs () {
@@ -403,24 +424,27 @@ int main (void) {
     oled_clearScreen(OLED_COLOR_BLACK);
 
     //init_timer32(1, snek_speed);
-    int_init(snek_speed);
+#define NO_MUSIC
+#ifndef NO_MUSIC
+    int_init(/*snek_speed*/ 10);
+#endif
 
-    int letters_state = 0;
-    const int8_t letters_speed = 10; //change letter each 10 iterations
-    const char* letters = (char*)"NO STEP ON SNECC ";
-    const int16_t letters_size = sizeof(letters);
+    uint16_t letters_state = 0;
+    const uint8_t letters_speed = 10; //change letter each 10 iterations
+    const uint8_t letters[] = "NO STEP ON SNECC ";
+    const uint8_t letters_size = sizeof(letters);
     while (TRUE) {
         //display letter on 7 segment display
-        letters_state = letters_state % (letters_size * letters_speed);
-        led7seg_setChar(letters[letters_state / letters_size], FALSE);
-        letters_state+=1;
+        letters_state %= letters_size * letters_speed;
+        led7seg_setChar(letters_state % letters_speed ? letters[letters_state / letters_speed] : ' ', FALSE);
+        letters_state++;
 
         //changeRgbLeds(trim);
 
-        int16_t new_snek_speed = ADCRead(0)/10;
+        int16_t new_snek_speed = 4000 / ADCRead(0) + 20;
         if (new_snek_speed != snek_speed) {
-            LPC_TMR32B1->TC = 0;
-            LPC_TMR32B1->MR0 = new_snek_speed;
+            //LPC_TMR32B1->TC = 0;
+            //LPC_TMR32B1->MR0 = new_snek_speed;
             snek_speed = new_snek_speed;
         }
 
