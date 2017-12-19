@@ -224,7 +224,7 @@ $\begin{array}{|l|l|l|}
 \section{Skrótowy opis działania programu}
 Podczas gry w Procesja$^{\textrm{TM}}$ gracz manewruje przy pomocy joysticka i/lub akcelerometru białą łamaną symbolizującą procesję i stara się poruszać nią w taki sposób, aby:
 \begin{itemize}
-	\item nie przecinać tworzonej przez siebie łamanej (podzielenie płaszczyzny na dwa rozłączne zbiory otwarte kończy grę); 
+	\item nie przecinać tworzonej przez siebie łamanej; 
 	\item zbierać pojawiające się na planszy kropki symbolizujące zbłąkane owieczki.
 \end{itemize}
 
@@ -248,6 +248,16 @@ Posuszanie wężem polega na sprawdzaniu stanów poszczególnych pinów. Przykł
 
 \subsection{ADC}
 \textit{Analog-Digital Converter}
+Konwerter analogowo cyfrowy $(ADC)$ jest przetwornikiem pozwalającym na zmianę zewnętrznego sygnału analogowego (w naszym przypadku napięcia) na ciąg $10$ bitów. $ADC$ na stosowanym przez nas mikrokontrolerze używa algorytmu sukcesywnej aproksymacji, którego krótki opis załączony zostanie w podrozdziale \textbf{Algorytm sukcesywnej aproksymacji w $ADC$}.
+
+Przy pomocy $ADC$ gracz jest w stanie kontrolować prędkość poruszanej przez siebie procesji. Precyzyjnie, jeden krok procesji zajmuje
+\[
+\operatorname{new\_snek\_speed} =\left( \left\lfloor \frac{4000}{ \operatorname{ADCread}(0)} \right\rfloor + 20 \right) \; ms.
+\]
+Do odczytu wartości z ADC stosowana jest funkcja \textit{ADCread(0)}, która odczytuje wartość napięcia na zerowym pinie.
+Odczytywane przez nas wartości z $ADC$ są liczbami całkowitymi z przedziału $[39;1023]$. Dzięki temu nigdy nie dochodzi do dzielenia przez zerową wartość. Funkcja odczytująca wartość wywoływana jest przy każdym obrocie głównej pętli programu. Dzięki temu wartość prędkość procesji jest dostosowywana na bieżąco do aktualnego napięcia na zerowym pinie $ADC$, które kontroluje użytkownik przy pomocy pokrętła A22K. Zgodnie z \cite{instrukcja} napięcie to mieści się w zakresie od $0$ do $3.6 \;V$. 
+
+	\subsubsection{Algorytm sukcesywnej aproksymacji $ADC$}
 
 \subsection{SPI/SSP}
 \textit{Synchronous Serial Port} -- wyświetlacz
