@@ -240,42 +240,80 @@ Układ, który dekrementuje lub inkrementuje wartość jednego ze swoich rejestr
 \end{itemize}
 Po inkrementacji $(TC)$ następuje wyzerowanie licznika preskalera.
 \subsection{GPIO}
-Skrót $(GPIO)$ oznacza \textit{General purpose input/output}, czyli interfejs wejścia/wyjścia ogólnego przeznaczenia. Przy pomocy $(GPIO)$ obsługiwany jest joystick, w który wyposażona jest płytka. Służy on do poruszania się instancją obiektu typu wąż, umożliwiając tym samym granie w grę.
+Skrót $(GPIO)$ oznacza \textit{General purpose input/output}, czyli \textbf{interfejs wejścia/wyjścia ogólnego przeznaczenia}. Przy pomocy $(GPIO)$ obsługiwany jest joystick, w który wyposażona jest płytka. Służy on do poruszania się instancją obiektu typu wąż, umożliwiając tym samym granie w grę.
 
 Aby używać joysticka musimy najpierw ustalić rolę odpowiednich pinów na \textit{INPUT}. W naszym przypadku stosowane jest port nr 2 i piny od $1$ do $4$, odpowiadających za poszczególne kierunki (odpowiednio dół/prawo/góra/lewo). 
 
 Posuszanie wężem polega na sprawdzaniu stanów poszczególnych pinów. Przykładowo, gdy ostatnio odczytany stan wysoki wystąpił na pinie nr 2, nasz wąż zacznie poruszać się w prawo (o ile jest to możliwe, tj. nie poruszał się uprzednio w lewo). Jeżeli nie jest odczytywany obecnie stan wysoki na żadnym z pinów, to wąż kontynuuje poruszanie się w ostatnio wybranym kierunku. W przypadku, gdy odczytany ruch jest przeciwny do obecnego, sygnał odebrany z $(GPIO)$ zostanie zignorowany.
 
 \subsection{ADC}
-\textit{Analog-Digital Converter}
-Konwerter analogowo cyfrowy $(ADC)$ jest przetwornikiem pozwalającym na zmianę zewnętrznego sygnału analogowego (w naszym przypadku napięcia) na ciąg $10$ bitów. $ADC$ na stosowanym przez nas mikrokontrolerze używa algorytmu sukcesywnej aproksymacji, którego krótki opis załączony zostanie w podrozdziale \textbf{Algorytm sukcesywnej aproksymacji w $ADC$}.
+\textit{Analog-Digital Converter}, czyli
+\textbf{Konwerter analogowo cyfrowy} $(ADC)$ jest przetwornikiem pozwalającym na zmianę zewnętrznego sygnału analogowego (w naszym przypadku napięcia) na ciąg $10$ bitów. $ADC$ na stosowanym przez nas mikrokontrolerze używa algorytmu sukcesywnej aproksymacji, którego krótki opis załączony zostanie w podrozdziale \textbf{Algorytm sukcesywnej aproksymacji w $ADC$}.
 
 Przy pomocy $ADC$ gracz jest w stanie kontrolować prędkość poruszanej przez siebie procesji. Precyzyjnie, jeden krok procesji zajmuje
 \[
 \operatorname{new\_snek\_speed} =\left( \left\lfloor \frac{4000}{ \operatorname{ADCread}(0)} \right\rfloor + 20 \right) \; ms.
 \]
 Do odczytu wartości z ADC stosowana jest funkcja \textit{ADCread(0)}, która odczytuje wartość napięcia na zerowym pinie.
-Odczytywane przez nas wartości z $ADC$ są liczbami całkowitymi z przedziału $[39;1023]$. Dzięki temu nigdy nie dochodzi do dzielenia przez zerową wartość. Funkcja odczytująca wartość wywoływana jest przy każdym obrocie głównej pętli programu. Dzięki temu wartość prędkość procesji jest dostosowywana na bieżąco do aktualnego napięcia na zerowym pinie $ADC$, które kontroluje użytkownik przy pomocy pokrętła A22K. Zgodnie z \cite{instrukcja} napięcie to mieści się w zakresie od $0$ do $3.6 \;V$. 
+Odczytywane przez nas wartości z $ADC$ są liczbami całkowitymi z przedziału $[39;1023]$. Dzięki temu nigdy nie dochodzi do dzielenia przez zerową wartość. Funkcja odczytująca wartość wywoływana jest przy każdym obrocie głównej pętli programu. Dzięki temu wartość prędkość procesji jest dostosowywana na bieżąco do aktualnego napięcia na zerowym pinie $ADC$, które kontroluje użytkownik przy pomocy pokrętła A22K. Zgodnie z \cite{INST} napięcie to mieści się w zakresie od $0$ do $3.6 \;V$. 
 
-	\subsubsection{Algorytm sukcesywnej aproksymacji $ADC$}
+	\subsubsection{Algorytm sukcesywnej aproksymacji $ADC$ \cite{ADCINST}}
+	Algorytm sukcesywnej aproksymacji jest w istocie sprzętową wersją przeszukiwania binarnego. Rejestr SAR (\textit{Successive Approximation Register}), do którego zapisywana bedzie odczytana z konwertera wartość jest pierwotnie zainicjalizowany samymi zerami, zaś najbardziej znaczący bit jest przestawiany na wartość $1$. Następnie wartość rejestru jest konwertowana na sygnał analogowy, po czym komparator porównuje napięcie wejściowe z konwertera z napięciem odpowiadającym ciągowi bitów z rejestru SAR. Jeżeli napięcie wejściowe w konwerterze (czyli sygnał otrzymywany dzięki ustawieniu pokrętła na odpowiedniej pozycji) przekracza wartość napięcia wygenerowanego na podstawie rejestru -- bit wiodący pozostaje w stanie $1$, w przeciwnym razie przypisana zostaje mu wartość $0$. Następnie analogiczne postępowanie zostaje przeprowadzane dla sukcesywnego bitu. Procedura powtarzana jest dziesięciokrotnie, do zapełnienia całego rejestru.
 
 \subsection{SPI/SSP}
-\textit{Synchronous Serial Port} -- wyświetlacz
+\textit{Serial Peripheral Interface / Synchronous Serial Port}, interfejs ten jest używany, by komunikować się z wyświetlaczami. Jak wskazuje nazwa, komunikacja przebiega synchronicznie poprzez trzy równoległe linie. Są nimi
+\begin{itemize}
+	\item $MOSI$ - \textit{Master Input Slave Output} pozwala na wysyłanie danych do zewnętrznego układu (w naszym wypadku wyświetlaczy);
+	\item $MISO$ - \textit{Master Output Slave Input} służy do pobierania danych z układu zewnętrznego;
+	\item $SCLK$ - \textit{Serial CLocK} zegar taktujący -- precyzyjniej sygnał zegarowy.
+\end{itemize}
 
 \subsection{I$^2$C}
+
+\subsection{Wyświetlacz siedmiosegmentowy}
+
+\subsection{Wyświetlacz}
 
 \subsection{Przerwania (Interrupts)}
 
 \section{Analiza FMEA}
 
 \begin{center}
-	\begin{tabular}{|c|c|c|}\hline
-		Możliwa awaria & Prawdopodobieństwo & Reakcja\\ \hline\hline % <-- note that two \hlines produce a double line
-		Michael Gustafson & mrg@duke.edu& xD\\ \hline
-		Michael Ehrenfried & mje7@duke.edu &Xd\\ \hline
+	\begin{tabular}{|c|c|c|c|}\hline
+		Możliwa awaria & Prawdopodobieństwo & Reakcja & Istotność\\ \hline\hline % <-- note that two \hlines produce a double line
+		Uszkodzenie wyświetlacza LCD & mrg@duke.edu& xD & Krytyczna \\ \hline
+		Uszkodzenie joysticka & mje7@duke.edu &Xd & Wysoka \\ \hline
+		Uszkodzenie akcelerometru & mje7@duke.edu &Xd & \'Srednia \\ \hline
+		Uszkodzenie wyświetlacza 7segmentowego & xD &XD & Znikoma \\ \hline
 	\end{tabular}
 \end{center}
+	\subsection{Uszkodzenie wyświetlacza LCD}
+		\subsubsection{Rozpoznanie}
+		\subsubsection{Reakcja}
+	\subsection{Uszkodzenie joysticka}
+		\subsubsection{Rozpoznanie}
+		\subsubsection{Reakcja}
+	\subsection{Uszkodzenie akcelerometru}
+	\subsubsection{Rozpoznanie}
+	\subsubsection{Reakcja}
+	\subsection{Uszkodzenie wyświetlacza 7segmentowego}
+	\subsubsection{Rozpoznanie}
+	\subsubsection{Reakcja}
 \section{Wykorzystane noty katalogowe, dokumentacja i literatura}
+		
+		\bibliographystyle{plain}
+\begin{thebibliography}{abcd}
+\bibitem{INST}{
+	\textit{UM10375 LPC1311/13/42/43 User manual},
+	{21 June 2012},
+	\textbf{Rev. 5},
+}		
+\bibitem{ADCINST}{
+\textit{Understanding SAR ADCs: Their Architecture and Comparison with Other ADCs}
+	{02 October 2001}
+	\textbf{Maxim Integrated Products, Inc.}	
+}
+\end{thebibliography}
 
 \end{document}
 
