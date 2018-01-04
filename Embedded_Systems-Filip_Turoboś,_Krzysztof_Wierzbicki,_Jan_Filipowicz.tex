@@ -126,7 +126,7 @@
 			lider: mgr Filip Turoboś %TU WPISZ SWOJE IMIĘ I NAZWISKO%
 			\\
 			Nr albumu: 
-			210344801147 %TU WPISZ SWÓJ NUMER ALBUMU%
+			210344 / 801147 %TU WPISZ SWÓJ NUMER ALBUMU%
 			\\
 			Jan Filipowicz %TU WPISZ SWOJE IMIĘ I NAZWISKO%
 			\\
@@ -183,6 +183,7 @@
 %\end{center}
 %\end{titlepage}
 \tableofcontents
+\newpage
 \section{Podsumowanie i technikalia}
 \subsection{Skład zespołu}
 $\begin{array}{|l|l|l|}
@@ -197,15 +198,25 @@ $\begin{array}{|l|l|l|}
 	\hline
 \end{array}$
 	% do poprawy
+\subsection{Sprzęt}
+Na potrzeby projektu nie wykonywano żadnego własnego sprzętu.
+Do projektu wykorzystano LPC1343 i Expansion Board.
 \subsection{Wykorzystane funkcjonalności i ich autorzy}
 %\subsubsection{MCU}
 
 %\subsubsection{Urządzenia peryferyjne}
 \begin{itemize}
 	\item Timer
+	\item GPIO
+	\item ADC
+	\item SPI/SSP
+	\item I$^2$C
+	\item Wyświetlacz siedmiosegmentowy
+	\item 
 \end{itemize}
 \subsubsection{Dokumentacja}
 Opis poszczególnych funkcjonalności: Filip Turoboś
+
 Skład i opracowanie całości dokumentu: Filip Turoboś
 
 \subsubsection{Procentowy udział poszczególnych członków zespołu w tworzeniu końcowej wersji projektu}
@@ -230,8 +241,9 @@ Podczas gry w Procesja$^{\textrm{TM}}$ gracz manewruje przy pomocy joysticka i/l
 
 W przypadku gdy gracz najedzie łamaną na pulsującą kropkę, całość procesji zostaje przedłużona. Radując się z ilości zgromadzonych wiernych możemy odgrywać pieśń sakralną \textit{"Barka"} autorstwa Jana Pawła II.
 
+\section{Algorytm gry}
 
-
+\section{Funkcjonalności}
 \subsection{Timer}
 Układ, który dekrementuje lub inkrementuje wartość jednego ze swoich rejestrów w zależności od częstotliwości otrzymywanego sygnału nazywamy \textbf{timerem}. Każdy timer jest wyposażony w dwa podstawowe rejestry -- licznik timera i rejestr kontroli timera. W przypadku płytki LPC 1343 timer jest dodatkowo wyposażony w preskaler. Zwiększenie licznika timera $(TC)$ -- \textit{timer counter} następuje po spełnieniu następujących warunków:
 \begin{itemize}
@@ -273,11 +285,11 @@ Odczytywane przez nas wartości z $ADC$ są liczbami całkowitymi z przedziału 
 \subsection{Wyświetlacz siedmiosegmentowy}
 W zaprojektowanej grze wyświetlacz siedmiosegmentowy służy jako element dekoracyjny i nie ma wpływu na rozgrywkę. Przez cały czas trwania rozgrywki wyświetla on kolejne litery napisu.
 
-1. Inicjalizacja wyświetlacza siedmiosegmentowego polega na ustawieniu kierunku \textit{out} w pierwszym porcie GPIO na 11 bicie
+1. Inicjalizacja wyświetlacza siedmiosegmentowego polega na ustawieniu kierunku wyjście w pierwszym porcie GPIO na 11 bicie
 \begin{verbatim}
 		LPC_GPIO1->DIR |= (0x1<<11);
 \end{verbatim}
-a następnie ustawienie na tym bicie wartości 1 -- sprawia to, że wyświetlacz jest gotowy do użytku i nie wyświetla jeszcze żadnego znaku.
+a następnie ustawienie na tym bicie wartości 1, przy czym tak zainicjalizowany wyświetlacz nie wyświetla jeszcze żadnego znaku.
 \begin{verbatim}
  GPIOShadowPort1 |= (1<<11);
 \end{verbatim}
@@ -298,12 +310,16 @@ $\quad$ 3.1 Upewniamy się, że zmienna kontrolująca wartość wyświetlanej li
 letters_state %= letters_size * letters_speed;
 \end{verbatim}
 
-$\quad$ 3.2 Wybieramy instrukcją warunkową czy obecnie wyświetlany jest znak z tablicy letters, czy też następuje przerwa, która czyni napis czytelniejszym dla użytkownika. Zestaw stosowanych w programie znaków pozwala wyświetlić każdy z nich na wyświetlaczu siedmiosegmentowym. Fałsz przekazywany jako drugi argument funkcji sprawia, że nie wchodzimy w tryb surowego przesyłu danych (tryb w którym korzystamy z funkcji led7seg\_setChar sprawia, że litery odczytywane są jako znaki ASCII):
+$\quad$ 3.2 Wybieramy instrukcją warunkową czy obecnie wyświetlany jest znak z tablicy letters, czy też następuje przerwa, która czyni napis czytelniejszym dla użytkownika. Zestaw stosowanych w programie znaków pozwala wyświetlić każdy z nich na wyświetlaczu siedmiosegmentowym. Zero przekazywane jako drugi argument funkcji sprawia, że nie wchodzimy w tryb surowego przesyłu danych (tryb w którym korzystamy z funkcji led7seg\_setChar sprawia, że litery odczytywane są jako znaki ASCII):
 \begin{verbatim}
 led7seg_setChar(letters_state % letters_speed ?
 letters[letters_state / letters_speed] : ' ', FALSE);
 \end{verbatim}
-Tu trochę wyjaśnienia dotyczacego przesyłania danych przez SSP.
+Funkcja ta przy pomocy metody SSPSend przekazuje stablicowane ośmiobitowe wartości całkowite odpowiadające poszczególnym wyświetlanym znakom. Przykładowo, wartością odpowiadającą literze '\textbf{S}' jest 0x12. Przed przesłaniem przez SSP jakichkolwiek danych musimy jednak zmienić wartość jedenastego bitu pierwszego portu GPIO na 0. 
+\begin{verbatim}
+GPIOShadowPort1 &= ~(1<<bitPosi);
+\end{verbatim}
+Po zakończeniu przesyłania zmiennej zostaje on ponownie przywrócony do stanu 1 tak samo jak przy inicjalizacji.
 
 $\quad$ 3.3 Zwiększamy wartość letters\_state o jeden.
 \begin{verbatim}
