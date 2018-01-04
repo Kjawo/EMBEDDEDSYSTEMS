@@ -240,7 +240,7 @@ Układ, który dekrementuje lub inkrementuje wartość jednego ze swoich rejestr
 \end{itemize}
 Po inkrementacji $(TC)$ następuje wyzerowanie licznika preskalera.
 \subsection{GPIO}
-Skrót $(GPIO)$ oznacza \textit{General purpose input/output}, czyli \textbf{interfejs wejścia/wyjścia ogólnego przeznaczenia}. Przy pomocy $(GPIO)$ obsługiwany jest joystick, w który wyposażona jest płytka. Służy on do poruszania się instancją obiektu typu wąż, umożliwiając tym samym granie w grę.
+Skrót $(GPIO)$ oznacza \textit{General purpose input/output}, czyli \textbf{interfejs wejścia /wyjścia ogólnego przeznaczenia}. Przy pomocy $(GPIO)$ obsługiwany jest joystick, w który wyposażona jest płytka. Służy on do poruszania się instancją obiektu typu wąż, umożliwiając tym samym granie w grę.
 
 Aby używać joysticka musimy najpierw ustalić rolę odpowiednich pinów na \textit{INPUT}. W naszym przypadku stosowane jest port nr 2 i piny od $1$ do $4$, odpowiadających za poszczególne kierunki (odpowiednio dół/prawo/góra/lewo). 
 
@@ -271,10 +271,53 @@ Odczytywane przez nas wartości z $ADC$ są liczbami całkowitymi z przedziału 
 \subsection{I$^2$C}
 
 \subsection{Wyświetlacz siedmiosegmentowy}
+W zaprojektowanej grze wyświetlacz siedmiosegmentowy służy jako element dekoracyjny i nie ma wpływu na rozgrywkę. Przez cały czas trwania rozgrywki wyświetla on kolejne litery napisu.
 
-\subsection{Wyświetlacz}
+1. Inicjalizacja wyświetlacza siedmiosegmentowego polega na ustawieniu kierunku \textit{out} w pierwszym porcie GPIO na 11 bicie
+\begin{verbatim}
+		LPC_GPIO1->DIR |= (0x1<<11);
+\end{verbatim}
+a następnie ustawienie na tym bicie wartości 1 -- sprawia to, że wyświetlacz jest gotowy do użytku i nie wyświetla jeszcze żadnego znaku.
+\begin{verbatim}
+ GPIOShadowPort1 |= (1<<11);
+\end{verbatim}
+
+2. Deklarujemy wartość zmiennej letters\_speed, która opisywać będzie co ile iteracji głównej pętli programu nastąpi zmiana wyświetlanego znaku (poprzedzona jednoiteracyjną przerwą):
+\begin{verbatim}
+const uint8_t letters_speed = 10;
+\end{verbatim}
+Tablica znaków do wyświetlania przez wyświetlacz siedmiosegmentowy ma następującą deklarację:
+\begin{verbatim}
+const uint8_t letters[] = "NO STEP ON SNECC ";
+\end{verbatim}
+
+3. W pojedynczej iteracji głównej pętli programu wykonujemy następujące kroki:
+
+$\quad$ 3.1 Upewniamy się, że zmienna kontrolująca wartość wyświetlanej litery letters\_state nie przekroczy wartości \textbf{sizeof}(letters)$\cdot$letters\_speed.
+\begin{verbatim}
+letters_state %= letters_size * letters_speed;
+\end{verbatim}
+
+$\quad$ 3.2 Wybieramy instrukcją warunkową czy obecnie wyświetlany jest znak z tablicy letters, czy też następuje przerwa, która czyni napis czytelniejszym dla użytkownika. Zestaw stosowanych w programie znaków pozwala wyświetlić każdy z nich na wyświetlaczu siedmiosegmentowym. Fałsz przekazywany jako drugi argument funkcji sprawia, że nie wchodzimy w tryb surowego przesyłu danych (tryb w którym korzystamy z funkcji led7seg\_setChar sprawia, że litery odczytywane są jako znaki ASCII):
+\begin{verbatim}
+led7seg_setChar(letters_state % letters_speed ?
+letters[letters_state / letters_speed] : ' ', FALSE);
+\end{verbatim}
+Tu trochę wyjaśnienia dotyczacego przesyłania danych przez SSP.
+
+$\quad$ 3.3 Zwiększamy wartość letters\_state o jeden.
+\begin{verbatim}
+letters_state++;
+\end{verbatim}
+\subsection{Wyświetlacz LCD}
 
 \subsection{Przerwania (Interrupts)}
+
+\subsection{DAC}
+
+\subsection{Akcelerometr}
+
+
 
 \section{Analiza FMEA}
 
