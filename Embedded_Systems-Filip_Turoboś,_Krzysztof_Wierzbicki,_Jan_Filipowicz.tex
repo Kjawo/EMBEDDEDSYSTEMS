@@ -212,7 +212,10 @@ Do projektu wykorzystano LPC1343 i Expansion Board.
 	\item SPI/SSP
 	\item I$^2$C
 	\item Wyświetlacz siedmiosegmentowy
-	\item 
+	\item Wyświetlacz LCD
+	\item Przerwania
+	\item DAC
+	\item Akcelerometr
 \end{itemize}
 \subsubsection{Dokumentacja}
 Opis poszczególnych funkcjonalności: Filip Turoboś
@@ -285,7 +288,7 @@ Odczytywane przez nas wartości z $ADC$ są liczbami całkowitymi z przedziału 
 \subsection{Wyświetlacz siedmiosegmentowy}
 W zaprojektowanej grze wyświetlacz siedmiosegmentowy służy jako element dekoracyjny i nie ma wpływu na rozgrywkę. Przez cały czas trwania rozgrywki wyświetla on kolejne litery napisu.
 
-1. Inicjalizacja wyświetlacza siedmiosegmentowego polega na ustawieniu kierunku wyjście w pierwszym porcie GPIO na 11 bicie
+1. Inicjalizacja wyświetlacza siedmiosegmentowego polega na ustawieniu kierunku w pierwszym porcie GPIO. Na 11 bicie ustawiana jest wartość 1, co oznacza kierunek wyjściowy
 \begin{verbatim}
 		LPC_GPIO1->DIR |= (0x1<<11);
 \end{verbatim}
@@ -329,7 +332,7 @@ letters_state++;
 
 \subsection{Przerwania (Interrupts)}
 
-\subsection{DAC}
+\subsection{DAC (Melodia)}
 
 \subsection{Akcelerometr}
 
