@@ -263,7 +263,7 @@ Posuszanie wężem polega na sprawdzaniu stanów poszczególnych pinów. Przykł
 
 \subsection{ADC}
 \textit{Analog-Digital Converter}, czyli
-\textbf{Konwerter analogowo cyfrowy} $(ADC)$ jest przetwornikiem pozwalającym na zmianę zewnętrznego sygnału analogowego (w naszym przypadku napięcia) na ciąg $10$ bitów. $ADC$ na stosowanym przez nas mikrokontrolerze używa algorytmu sukcesywnej aproksymacji, którego krótki opis załączony zostanie w podrozdziale \textbf{Algorytm sukcesywnej aproksymacji w $ADC$}.
+\textbf{Konwerter analogowo-cyfrowy} $(ADC)$ jest przetwornikiem pozwalającym na zmianę zewnętrznego sygnału analogowego (w naszym przypadku napięcia) na ciąg $10$ bitów. $ADC$ na stosowanym przez nas mikrokontrolerze używa algorytmu sukcesywnej aproksymacji, którego krótki opis załączony zostanie w podrozdziale \textbf{Algorytm sukcesywnej aproksymacji w $ADC$}.
 
 Przy pomocy $ADC$ gracz jest w stanie kontrolować prędkość poruszanej przez siebie procesji. Precyzyjnie, jeden krok procesji zajmuje
 \[
@@ -271,6 +271,18 @@ Przy pomocy $ADC$ gracz jest w stanie kontrolować prędkość poruszanej przez 
 \]
 Do odczytu wartości z ADC stosowana jest funkcja \textit{ADCread(0)}, która odczytuje wartość napięcia na zerowym pinie.
 Odczytywane przez nas wartości z $ADC$ są liczbami całkowitymi z przedziału $[39;1023]$. Dzięki temu nigdy nie dochodzi do dzielenia przez zerową wartość. Funkcja odczytująca wartość wywoływana jest przy każdym obrocie głównej pętli programu. Dzięki temu wartość prędkość procesji jest dostosowywana na bieżąco do aktualnego napięcia na zerowym pinie $ADC$, które kontroluje użytkownik przy pomocy pokrętła A22K. Zgodnie z \cite{INST} napięcie to mieści się w zakresie od $0$ do $3.6 \;V$. 
+Inicjalizacja konwertera analogowo-cyfrowego przebiega w następujący sposób:
+\begin{enumerate}
+	\item Zerujemy bit odpowiadający za odłączenie od zasilania bloku konwertera:
+		\begin{verbatim}
+		  LPC_SYSCON->PDRUNCFG &= ~(0x1<<4);
+		\end{verbatim}
+	\item Uruchamiamy zegar AHB dla bloku ADC
+		\begin{verbatim}
+		  LPC_SYSCON->SYSAHBCLKCTRL |= (1<<13);
+		\end{verbatim}
+	\item ...nie rozumiem.
+\end{enumerate}
 
 	\subsubsection{Algorytm sukcesywnej aproksymacji $ADC$ \cite{ADCINST}}
 	Algorytm sukcesywnej aproksymacji jest w istocie sprzętową wersją przeszukiwania binarnego. Rejestr SAR (\textit{Successive Approximation Register}), do którego zapisywana bedzie odczytana z konwertera wartość jest pierwotnie zainicjalizowany samymi zerami, zaś najbardziej znaczący bit jest przestawiany na wartość $1$. Następnie wartość rejestru jest konwertowana na sygnał analogowy, po czym komparator porównuje napięcie wejściowe z konwertera z napięciem odpowiadającym ciągowi bitów z rejestru SAR. Jeżeli napięcie wejściowe w konwerterze (czyli sygnał otrzymywany dzięki ustawieniu pokrętła na odpowiedniej pozycji) przekracza wartość napięcia wygenerowanego na podstawie rejestru -- bit wiodący pozostaje w stanie $1$, w przeciwnym razie przypisana zostaje mu wartość $0$. Następnie analogiczne postępowanie zostaje przeprowadzane dla sukcesywnego bitu. Procedura powtarzana jest dziesięciokrotnie, do zapełnienia całego rejestru.
@@ -371,10 +383,14 @@ letters_state++;
 	\textbf{Rev. 5},
 }		
 \bibitem{ADCINST}{
-\textit{Understanding SAR ADCs: Their Architecture and Comparison with Other ADCs}
-	{02 October 2001}
+\textit{Understanding SAR ADCs: Their Architecture and Comparison with Other ADCs},
+	{02 October 2001},
 	\textbf{Maxim Integrated Products, Inc.}	
 }
+\bibitem{ADCtut}
+{LPC1343 ADC programming tutorial},
+	{18 November 2017},
+	\textbf{Umang Gajera}
 \end{thebibliography}
 
 \end{document}
