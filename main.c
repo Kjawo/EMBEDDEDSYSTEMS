@@ -8,7 +8,7 @@
 #include "ssp.h"
 #include "adc.h"
 #include "system_LPC13xx.h"
-
+#include "light.h"
 #include "joystick.h"
 #include "pca9532.h"
 #include "acc.h"
@@ -77,6 +77,9 @@ typedef enum{CENTER, UP, DOWN, RIGHT, LEFT} directions;
 static void processSnake (uint8_t controlsState) {
         static uint8_t virgin = TRUE; //is set to FALSE after first call
         static uint8_t dir = 0;
+
+    	//this will hold current light sensor readings
+        uint32_t lux = 1000;
 
         typedef struct Vector2 {
                 int16_t x;
@@ -167,8 +170,10 @@ static void processSnake (uint8_t controlsState) {
             	//blink dot
         		putSquare(dot.x, dot.y, (oled_color_t)(dotBlink ^= 1));
         }
+        //reading light sensor readings
+        lux = light_read();
 
-        if (hasSnake[snake[currentHead].y][snake[currentHead].x]) {
+        if (hasSnake[snake[currentHead].y][snake[currentHead].x] || lux < 100) {
         	//die
         	virgin = TRUE;
         	dir = 0;
@@ -185,6 +190,7 @@ static void processSnake (uint8_t controlsState) {
 			putSquare(snake[currentHead].x, snake[currentHead].y, OLED_COLOR_WHITE);
 			hasSnake[snake[currentHead].y][snake[currentHead].x] = TRUE;
         }
+
 }
 
 void blinkLEDs () {
@@ -353,7 +359,9 @@ void int_init(int TimerInterval){
 }
 
 int main (void) {
-
+    //setting up light sensor
+    light_enable();
+    light_setRange(LIGHT_RANGE_4000);
     //these will hold zero position of board from accelerometer
     int8_t xoff = 0;
     int8_t yoff = 0;
