@@ -48,6 +48,11 @@
 
 uint8_t is_play_song = TRUE;
 
+#define BROKEN 1
+#define GOOD 0
+
+uint8_t acc_status = GOOD;
+
 static void putSquare(uint8_t x, uint8_t y, oled_color_t color) {
 	x *= 3;
 	y *= 3;
@@ -78,9 +83,6 @@ static void processSnake (uint8_t controlsState) {
         static uint8_t virgin = TRUE; //is set to FALSE after first call
         static uint8_t dir = 0;
 
-    	//this will hold current light sensor readings
-        uint32_t lux = 1000;
-
         typedef struct Vector2 {
                 int16_t x;
                 int16_t y;
@@ -94,6 +96,10 @@ static void processSnake (uint8_t controlsState) {
         static uint16_t currentLength = 5;
         static Vector2 dot;
         static uint8_t dotBlink = 0;
+
+    	//this will hold current light sensor readings
+        //reading light sensor readings
+        uint32_t lux = light_read();
 
     //at first call create snake and put dot
         if (virgin) {
@@ -170,8 +176,6 @@ static void processSnake (uint8_t controlsState) {
             	//blink dot
         		putSquare(dot.x, dot.y, (oled_color_t)(dotBlink ^= 1));
         }
-        //reading light sensor readings
-        lux = light_read();
 
         if (hasSnake[snake[currentHead].y][snake[currentHead].x] || lux < 100) {
         	//die
@@ -202,16 +206,6 @@ void blinkLEDs () {
         delay32Ms(0, 100);
         pca9532_setLeds(0x0000, 0xff00);
 }
-
-/*
-static void changeRgbLeds (uint32_t value) {
-    uint8_t leds = 0;
-
-    leds = value / 128;
-
-    rgb_setLeds(leds);
-}
-*/
 
 //pitch in Hz
 static uint32_t notes[] = {
@@ -359,13 +353,10 @@ void int_init(int TimerInterval){
 }
 
 int main (void) {
-    //setting up light sensor
-    light_enable();
-    light_setRange(LIGHT_RANGE_4000);
     //these will hold zero position of board from accelerometer
     int8_t xoff = 0;
     int8_t yoff = 0;
-    //int8_t zoff = 0;
+    int8_t zoff = 0;
 
     //here goes data from accelerometer
     int8_t x = 0;
@@ -376,7 +367,7 @@ int main (void) {
     uint8_t state = 0;
     uint8_t acc_state = 0; //0bLeftRightDownUpCenter
 /*
-    uint8_t btn1 = 0;
+    uint8_t btn1 = 0;light_setRange
 */
 
     GPIOInit();
@@ -398,13 +389,17 @@ int main (void) {
     oled_init();
     rgb_init();
 
+    //setting up light sensor
+	light_init();
+    light_enable();
+    light_setRange(LIGHT_RANGE_4000);
 
 
     //assume base board in zero position when reading first value
     acc_read(&x, &y, &z);
     xoff = x;
     yoff = y;
-    //zoff = 64-z;
+    zoff = z-64;
 
 
     /* ---- Speaker ------> */
@@ -432,7 +427,7 @@ int main (void) {
     oled_clearScreen(OLED_COLOR_BLACK);
 
     //init_timer32(1, snek_speed);
-#define NO_MUSIC
+//#define NO_MUSIC
 #ifndef NO_MUSIC
     int_init(/*snek_speed*/ 10);
 #endif
@@ -457,13 +452,26 @@ int main (void) {
         }
 
         //read accelerometer
-        acc_state=0;
-        acc_read(&x, &y, &z);
-        //printf("x:%d, y:%d, z:%d, sum:%d\n", x-xoff, y-yoff, z, z+y+x);
-        acc_state |= ((y-yoff)<-10)<<UP;
-        acc_state |= ((y-yoff)>10)<<DOWN;
-        acc_state |= ((x-xoff)<-10)<<LEFT;
-        acc_state |= ((x-xoff)>10)<<RIGHT;
+        if(acc_status == GOOD) {
+			acc_state=0;
+			acc_read(&x, &y, &z);
+
+			x -= xoff;
+			y -= yoff;
+			z -= zoff;
+
+			uint16_t sum = x*x+y*y+z*z;
+
+			if(sum < 2500 || sum > 6000) {
+				acc_status = BROKEN;
+				acc_state=0;
+			} else {
+				acc_state |= (y<-10)<<UP;
+				acc_state |= (y>10)<<DOWN;
+				acc_state |= (x<-10)<<LEFT;
+				acc_state |= (x>10)<<RIGHT;
+			}
+        }
 
         state = joystick_read();
 
