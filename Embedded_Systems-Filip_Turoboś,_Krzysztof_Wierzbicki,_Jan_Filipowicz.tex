@@ -292,15 +292,18 @@ Inicjalizacja konwertera analogowo-cyfrowego przebiega w następujący sposób:
 	\subsubsection{Algorytm sukcesywnej aproksymacji $ADC$ \cite{ADCINST}}
 	Algorytm sukcesywnej aproksymacji jest w istocie sprzętową wersją przeszukiwania binarnego. Rejestr SAR (\textit{Successive Approximation Register}), do którego zapisywana bedzie odczytana z konwertera wartość jest pierwotnie zainicjalizowany samymi zerami, zaś najbardziej znaczący bit jest przestawiany na wartość $1$. Następnie wartość rejestru jest konwertowana na sygnał analogowy, po czym komparator porównuje napięcie wejściowe z konwertera z napięciem odpowiadającym ciągowi bitów z rejestru SAR. Jeżeli napięcie wejściowe w konwerterze (czyli sygnał otrzymywany dzięki ustawieniu pokrętła na odpowiedniej pozycji) przekracza wartość napięcia wygenerowanego na podstawie rejestru -- bit wiodący pozostaje w stanie $1$, w przeciwnym razie przypisana zostaje mu wartość $0$. Następnie analogiczne postępowanie zostaje przeprowadzane dla sukcesywnego bitu. Procedura powtarzana jest dziesięciokrotnie, do zapełnienia całego rejestru.
 
-\subsection{SPI/SSP}
-\textit{Serial Peripheral Interface / Synchronous Serial Port}, interfejs ten jest używany, by komunikować się z wyświetlaczami. Jak wskazuje nazwa, komunikacja przebiega synchronicznie poprzez trzy równoległe linie. Są nimi
+\subsection{SSP/SPI}
+\textit{Serial Peripheral Interface / Synchronous Serial Port}, szeregowy interfejs SSP jest używany, by komunikować się z wyświetlaczami. W naszym przypadku używamy protokołu SPI. Komunikacja przebiega synchronicznie poprzez trzy równoległe linie. Są nimi
 \begin{itemize}
 	\item $MOSI$ - \textit{Master Input Slave Output} pozwala na wysyłanie danych do zewnętrznego układu (w naszym wypadku wyświetlaczy);
 	\item $MISO$ - \textit{Master Output Slave Input} służy do pobierania danych z układu zewnętrznego;
 	\item $SCLK$ - \textit{Serial CLocK} zegar taktujący -- precyzyjniej sygnał zegarowy.
 \end{itemize}
+	Czasami występuje także czwarta linia - $SS$ czyli \textit{Slave Select} pozwalająca wybrać które urządzenie jest mistrzem a które niewolnikiem. 
+	Po ustaleniu kto jest master, ustawieniu prędkości transmisji oraz jej kierunku (MSB albo LSB) następuje transmisja danych, która następuje dwukierunkowo -- dane są jednocześnie wysyłane i odbierane zgodnie z sygnałem zegara po jednum bicie, w ten sposób pomiedzy rejestrami przesuwnymi mastera i slave następuje wymiana danych.
 
 \subsection{I$^2$C}
+Także działa przez interfejs SSP.
 
 \subsection{Wyświetlacz siedmiosegmentowy}
 W zaprojektowanej grze wyświetlacz siedmiosegmentowy służy jako element dekoracyjny i nie ma wpływu na rozgrywkę. Przez cały czas trwania rozgrywki wyświetla on kolejne litery napisu.
