@@ -216,6 +216,7 @@ Do projektu wykorzystano LPC1343 i Expansion Board.
 	\item Przerwania
 	\item DAC
 	\item Akcelerometr
+	\item Czujnik światła
 \end{itemize}
 \subsubsection{Dokumentacja}
 Opis poszczególnych funkcjonalności: Filip Turoboś
@@ -260,6 +261,10 @@ Skrót $(GPIO)$ oznacza \textit{General purpose input/output}, czyli \textbf{int
 Aby używać joysticka musimy najpierw ustalić rolę odpowiednich pinów na \textit{INPUT}. W naszym przypadku stosowane jest port nr 2 i piny od $1$ do $4$, odpowiadających za poszczególne kierunki (odpowiednio dół/prawo/góra/lewo). 
 
 Posuszanie wężem polega na sprawdzaniu stanów poszczególnych pinów. Przykładowo, gdy ostatnio odczytany stan wysoki wystąpił na pinie nr 2, nasz wąż zacznie poruszać się w prawo (o ile jest to możliwe, tj. nie poruszał się uprzednio w lewo). Jeżeli nie jest odczytywany obecnie stan wysoki na żadnym z pinów, to wąż kontynuuje poruszanie się w ostatnio wybranym kierunku. W przypadku, gdy odczytany ruch jest przeciwny do obecnego, sygnał odebrany z $(GPIO)$ zostanie zignorowany.
+
+
+
+%Joystick czytamy z portu 2 piny 0..4
 
 \subsection{ADC}
 \textit{Analog-Digital Converter}, czyli
@@ -344,35 +349,47 @@ letters_state++;
 
 \subsection{Przerwania (Interrupts)}
 
-\subsection{DAC (Melodia)}
+\subsection{Głośnik (GPIO) -- Melodia}
+Aby zainicjalizować głośniczek ustawiamy kierunek 
+\begin{verbatim}
+LPC_GPIO1->DATA |= (0x1<<2)
+\end{verbatim}
 
 \subsection{Akcelerometr}
 
+\subsection{Czujnik \'Swiatła}
 
 
 \section{Analiza FMEA}
 
 \begin{center}
-	\begin{tabular}{|c|c|c|c|}\hline
-		Możliwa awaria & Prawdopodobieństwo & Reakcja & Istotność\\ \hline\hline % <-- note that two \hlines produce a double line
-		Uszkodzenie wyświetlacza LCD & mrg@duke.edu& xD & Krytyczna \\ \hline
-		Uszkodzenie joysticka & mje7@duke.edu &Xd & Wysoka \\ \hline
-		Uszkodzenie akcelerometru & mje7@duke.edu &Xd & \'Srednia \\ \hline
-		Uszkodzenie wyświetlacza 7segmentowego & xD &XD & Znikoma \\ \hline
+	\hspace*{-50pt}\begin{tabular}{|c|c|c|c|c|}\hline
+		Możliwa awaria & Prawdopodobieństwo & Reakcja & Istotność & Iloczyn  \\ \hline\hline % <-- note that two \hlines produce a double line
+		Uszkodzenie wyświetlacza LCD & Niewielkie $0.01$ & Nie & Krytyczna $10$ & $0.1$ \\ \hline
+		Uszkodzenie czujnika światła & Małe $0.02$ & Nie & Krytyczna $10$ & $0.2$ \\ \hline
+		Uszkodzenie joysticka & \'Srednie $0.2$ & Tak & Wysoka $8$ & $1.6$ \\ \hline
+		Uszkodzenie akcelerometru & \'Srednie $0.3$ & Tak & \'Srednia $6$ & $1.8$ \\ \hline
+		Uszkodzenie wyświetlacza 7segmentowego & Znikome $0.01$ & Nie & Zerowa $0.1$ & $0.001$ \\ \hline
 	\end{tabular}
 \end{center}
 	\subsection{Uszkodzenie wyświetlacza LCD}
+	Możliwe uszkodzenie wyświetlacza LCD spowoduje całkowitą niegrywalność
 		\subsubsection{Rozpoznanie}
 		\subsubsection{Reakcja}
 	\subsection{Uszkodzenie joysticka}
 		\subsubsection{Rozpoznanie}
 		\subsubsection{Reakcja}
 	\subsection{Uszkodzenie akcelerometru}
+	Uszkodzenie akcelerometru może powodować błędy w zachowaniu się procesji -- mianowicie mogłoby sprawić, że kierunek poruszania się procesji zostanie ustalony i niezależnie od wykonywanych przez gracza manewrów gra nieprzerwanie próbować będzie odczytać wskazania akcelerometra i poruszać procesją zgodnie z tymi odczytami.
 	\subsubsection{Rozpoznanie}
+	Przy uruchomieniu zakładamy, że płytka jest ustawiona w pozycji horyzontalnej na płaskiej powierzchni i oddziałuje na nią wektor przyspieszenia grawitacyjnego $1g$ skierowany pionowo w dół, tj. o współrzędnych $(0,0,-1)$. Następnie obliczany jest kwadrat długości obecnie odczytanego przez akcelerometr wektora przyspiesznia. Jeżeli wartość normy odczytanego wektora przyspieszenia $X$ przy przyjmowanym zakresie akcelerometru (wynoszącym $2g$) mieści się w przedziale
+	$$0.78125 = \frac{2500}{4096} g < \| X \| < \frac{6000}{4096} \simeq 1.210307 ,$$
+	odczyty uznajemy za poprawne. W przypadku wystąpienia odczytu wykraczającego poza ten zakres, program uznaje joystick za uszkodzony.
+	%Na akcelerometrze 64 = 1g 
 	\subsubsection{Reakcja}
+	
 	\subsection{Uszkodzenie wyświetlacza 7segmentowego}
-	\subsubsection{Rozpoznanie}
-	\subsubsection{Reakcja}
+	Uszkodzenie wyświetlacza siedmiosegmentowego ma jedynie znaczenie kosmetyczne i nie wpływa w żaden sposób na działanie całości programu. W związku z tym nie zużywamy mocy obliczeniowej na sprawdzanie poprawności jego działania ani nie reagujemy na jego ewentualne uszkodzenie.
 \section{Wykorzystane noty katalogowe, dokumentacja i literatura}
 		
 		\bibliographystyle{plain}
