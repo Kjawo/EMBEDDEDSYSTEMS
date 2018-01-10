@@ -249,7 +249,7 @@ W przypadku gdy gracz najedzie łamaną na pulsującą kropkę, całość proces
 \section{Algorytm gry}
 Gra działa na zasadzie popularnej gry Snake -- procesja porusza poprzez usunięcie ostatniej kropki (ostatniego segmentu symbolizującego wiernego) i dodaniu kropki symbolizującej proboszcza na początku procesji. Rozpoczęcie gry polega na zainicjalizowaniu pięciu kropek tworzących procesję na środku poziomu (poziom ma wymiary $32 \times 21$ punktów) oraz utworzeniu kropki wiernego w losowym miejscu na planszy.
 
-Procesja porusza się ruchem jednostajnym w ostatnim wskazanym przez gracza kierunku (początkowo w górę). Pochód może przechodzić przez \textit{ścianki} poziomu, kontynuuje on wówczas swój ruch po przeciwnej stronie ekranu (poziom jest \textit{de facto} homeomorficzny z torusem). Przy każdym ruchu procesji obliczana jest odległość proboszcza (początku procesji) od zbłąkanej owieczki, która mruga. Gdy odległość ta wynosi nie więcej niż $TOLERANCE$ (zmienna oznaczająca precyzję wymaganą od gracza, domyślnie ma wartość zero) wierny dołącza do pochodu, wydłużając długość procesji o jeden. Fakt ten sygnalizowany jest błyśnięciem diodami LED. Ponadto w losowym miejscu pojawia się nowa zbłądana owieczka. Jeżeli czoło pochodu zderzy się z jego częścią (lub zostanie zakryty czujnik światła) to gra się restartuje, wracając do stanu początkowego. 
+Procesja porusza się ruchem jednostajnym w ostatnim wskazanym przez gracza kierunku (początkowo w górę). Pochód może przechodzić przez \textit{ścianki} poziomu, kontynuuje on wówczas swój ruch po przeciwnej stronie ekranu (poziom jest \textit{de facto} homeomorficzny z torusem). Przy każdym ruchu procesji obliczana jest odległość proboszcza (początku procesji) od zbłąkanej owieczki, która mruga. Gdy odległość ta wynosi nie więcej niż \verb|TOLERANCE| (zmienna oznaczająca precyzję wymaganą od gracza, domyślnie ma wartość zero) wierny dołącza do pochodu, wydłużając długość procesji o jeden. Fakt ten sygnalizowany jest błyśnięciem diodami LED. Ponadto w losowym miejscu pojawia się nowa zbłądana owieczka. Jeżeli czoło pochodu zderzy się z jego częścią (lub zostanie zakryty czujnik światła) to gra się restartuje, wracając do stanu początkowego. 
 \section{Funkcjonalności}
 \subsection{Timer}
 Układ, który dekrementuje lub inkrementuje wartość jednego ze swoich rejestrów w zależności od częstotliwości otrzymywanego sygnału nazywamy \textbf{timerem}. Każdy timer jest wyposażony w dwa podstawowe rejestry -- licznik timera i rejestr kontroli timera. W przypadku płytki LPC 1343 timer jest dodatkowo wyposażony w preskaler. Zwiększenie licznika timera $(TC)$ -- \textit{timer counter} następuje po spełnieniu następujących warunków:
@@ -258,6 +258,20 @@ Układ, który dekrementuje lub inkrementuje wartość jednego ze swoich rejestr
 \item 32-bitowy licznik preskalera $(PC)$ osiągnie wartość $K+1$;
 \end{itemize}
 Po inkrementacji $(TC)$ następuje wyzerowanie licznika preskalera.
+
+Aby uruchomić timer należy:
+\begin{itemize}
+	\item uruchomić przesyłanie sygnału zegarowego do 32-bitowego timera o numerze zero (C32B0) \cite{INST}: 
+	\begin{verbatim}
+	LPC_SYSCON->SYSAHBCLKCTRL |= (1<<9);
+	\end{verbatim}
+	\item wybrać pin 5 z portu 1 do odbierania sygnału z wejścia input 0 C32B0
+	\item ustawiamy wejście sygnału z match registrów 0 - 2 port1.6, 1.7, 0.1
+	\item w match registrze timera ustawiamy interwał
+	\item w match control registrze ustawiamy \verb|0b11| - wyślij przerwanie i zresetuj jeżeli MR0
+	\item włączamy przerwania 
+\end{itemize}
+
 \subsection{GPIO}
 Skrót $(GPIO)$ oznacza \textit{General purpose input/output}, czyli \textbf{interfejs wejścia /wyjścia ogólnego przeznaczenia}. Przy pomocy $(GPIO)$ obsługiwany jest joystick, w który wyposażona jest płytka. Służy on do poruszania się instancją obiektu typu wąż, umożliwiając tym samym granie w grę.
 
@@ -270,6 +284,15 @@ Posuszanie wężem polega na sprawdzaniu stanów poszczególnych pinów. Przykł
 %Joystick czytamy z portu 2 piny 0..4
 
 \subsection{PCA9532}
+Diody przez ekspander nie wymagają inicjalizacji. 
+Ich użycie sprowadza się do:
+	\begin{itemize}
+		\item Ustalenia, które diody mają zostać włączone;
+		\item Przez I2C pod adres \verb|(0x60 << 1)| wysyłamy bajt kontrolny, którego 4 dolne bity oznaczają adres pierwszego rejestru, do którego chcemy zapisać informacje - \verb|0x06|. Piąty bit oznacza flagę inkrementacji, dzięki której podany przez nas adres jest zwiększany o 1 przy każdym kolejnym przesłanym bajcie. Istotne jest to, by trzy górne bity były zerami \cite{PCA};
+		\item Pod ten sam adres przesłania 32 bitów informacji do ekspandera, gdzie na każdą diodę przypadają dwa bity informacji, określające stan, w którym ma się znaleźć. Możliwe są cztery stany \cite{PCA} -- ON, OFF, Blink 1 i Blink2 (korzystamy jedynie z pierwszych dwóch).
+	\end{itemize}
+W przypadku naszego programu diody LED zapalają się sześciokrotnie, gdy do procesji dołączy kolejny wierny (kolory pojawiają się naprzemiennie). 
+
 \subsection{ADC}
 \textit{Analog-Digital Converter}, czyli
 \textbf{Konwerter analogowo-cyfrowy} $(ADC)$ jest przetwornikiem pozwalającym na zmianę zewnętrznego sygnału analogowego (w naszym przypadku napięcia) na ciąg $10$ bitów. $ADC$ na stosowanym przez nas mikrokontrolerze używa algorytmu sukcesywnej aproksymacji, którego krótki opis załączony zostanie w podrozdziale \textbf{Algorytm sukcesywnej aproksymacji w $ADC$}.
@@ -297,14 +320,35 @@ Inicjalizacja konwertera analogowo-cyfrowego przebiega w następujący sposób:
 	Algorytm sukcesywnej aproksymacji jest w istocie sprzętową wersją przeszukiwania binarnego. Rejestr SAR (\textit{Successive Approximation Register}), do którego zapisywana bedzie odczytana z konwertera wartość jest pierwotnie zainicjalizowany samymi zerami, zaś najbardziej znaczący bit jest przestawiany na wartość $1$. Następnie wartość rejestru jest konwertowana na sygnał analogowy, po czym komparator porównuje napięcie wejściowe z konwertera z napięciem odpowiadającym ciągowi bitów z rejestru SAR. Jeżeli napięcie wejściowe w konwerterze (czyli sygnał otrzymywany dzięki ustawieniu pokrętła na odpowiedniej pozycji) przekracza wartość napięcia wygenerowanego na podstawie rejestru -- bit wiodący pozostaje w stanie $1$, w przeciwnym razie przypisana zostaje mu wartość $0$. Następnie analogiczne postępowanie zostaje przeprowadzane dla sukcesywnego bitu. Procedura powtarzana jest dziesięciokrotnie, do zapełnienia całego rejestru.
 
 \subsection{SSP/SPI}
-\textit{Serial Peripheral Interface / Synchronous Serial Port}, szeregowy interfejs SSP jest używany, by komunikować się z wyświetlaczami. W naszym przypadku używamy protokołu SPI. Komunikacja przebiega synchronicznie poprzez trzy równoległe linie. Są nimi
+\textit{Serial Peripheral Interface / Synchronous Serial Port}, szeregowy interfejs SSP jest używany, by komunikować się z wyświetlaczami. W tym przypadku używamy protokołu SPI. Komunikacja przebiega synchronicznie poprzez trzy równoległe linie. Są nimi
 \begin{itemize}
 	\item $MOSI$ - \textit{Master Input Slave Output} pozwala na wysyłanie danych do zewnętrznego układu (w naszym wypadku wyświetlaczy);
 	\item $MISO$ - \textit{Master Output Slave Input} służy do pobierania danych z układu zewnętrznego;
 	\item $SCLK$ - \textit{Serial CLocK} zegar taktujący -- precyzyjniej sygnał zegarowy.
-\end{itemize}
-	Czasami występuje także czwarta linia - $SS$ czyli \textit{Slave Select} pozwalająca wybrać które urządzenie jest mistrzem a które niewolnikiem. 
-	Po ustaleniu kto jest master, ustawieniu prędkości transmisji oraz jej kierunku (MSB albo LSB) następuje transmisja danych, która następuje dwukierunkowo -- dane są jednocześnie wysyłane i odbierane zgodnie z sygnałem zegara po jednum bicie, w ten sposób pomiedzy rejestrami przesuwnymi mastera i slave następuje wymiana danych.
+	\item $SSEL$ - \textit{Slave SELect} służy do ustalenia które urządzenie jest slave.
+\end{itemize} 
+	Najpierw podłączamy zegar systemowy do SSP (przez szynę AHB) w następujący sposób \cite{INST}:
+\begin{verbatim}
+  LPC_SYSCON->PRESETCTRL |= (0x1<<0); // zaprzestań resetowania SSP
+  LPC_SYSCON->SYSAHBCLKCTRL |= (1<<11); // włącz zegar dla SSP
+\end{verbatim}
+	Dalej, ustawiany jest dzielnik częstotliwości zegara na 2:
+\begin{verbatim}
+  LPC_SYSCON->SSPCLKDIV = 0x02;	//dzielnik zegara peryferalnego
+\end{verbatim}
+
+Następnie w rejestrach kontroli wejścia/wyjścia ustawiamy linie MISO i MOSI na port 0, piny 8 i 9
+\begin{verbatim}
+  LPC_IOCON->PIO0_8   |= 0x01;	// MISO
+  LPC_IOCON->PIO0_9   |= 0x01;	// MOSI
+  \end{verbatim}
+  Następnie ustawiamy linię SCKL - wartość 1 na porcie 2 pin 11
+  Kolejnym krokiem jest ustawienie głównej płytki jako master -- 2 bit portu 0 GPIO jest wybierany jako wyjście i ustawiany jest na nim stan wysoki. 
+  
+	
+	 ustawieniu prędkości transmisji oraz jej kierunku (MSB albo LSB) następuje transmisja danych, która następuje dwukierunkowo -- dane są jednocześnie wysyłane i odbierane zgodnie z sygnałem zegara po jednum bicie, w ten sposób pomiedzy rejestrami przesuwnymi mastera i slave następuje wymiana danych.
+
+
 
 \subsection{I$^2$C}
 Także działa przez interfejs SSP.
@@ -415,9 +459,15 @@ LPC_GPIO1->DATA |= (0x1<<2)
 	\textbf{Maxim Integrated Products, Inc.}	
 }
 \bibitem{ADCtut}
-{LPC1343 ADC programming tutorial},
+\textit{LPC1343 ADC programming tutorial},
 	{18 November 2017},
 	\textbf{Umang Gajera}
+	
+\bibitem{PCA}{
+	\textit{PCA9532, 16-bit I2C-bus LED dimmer},
+	{22 August 2016}, 
+	\textbf{Rev. 4.1, Product data sheet}
+}
 \end{thebibliography}
 
 \end{document}
