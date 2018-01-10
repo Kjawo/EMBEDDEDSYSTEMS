@@ -258,7 +258,7 @@ Po inkrementacji $(TC)$ następuje wyzerowanie licznika preskalera.
 \subsection{GPIO}
 Skrót $(GPIO)$ oznacza \textit{General purpose input/output}, czyli \textbf{interfejs wejścia /wyjścia ogólnego przeznaczenia}. Przy pomocy $(GPIO)$ obsługiwany jest joystick, w który wyposażona jest płytka. Służy on do poruszania się instancją obiektu typu wąż, umożliwiając tym samym granie w grę.
 
-Aby używać joysticka musimy najpierw ustalić rolę odpowiednich pinów na \textit{INPUT}. W naszym przypadku stosowane jest port nr 2 i piny od $1$ do $4$, odpowiadających za poszczególne kierunki (odpowiednio dół/prawo/góra/lewo). 
+Aby używać joysticka musimy najpierw ustalić rolę odpowiednich pinów na \textit{INPUT}. W naszym przypadku stosowane jest port nr 2 i piny od $0$ do $4$, odpowiadających za poszczególne kierunki (odpowiednio centrum/dół/prawo/góra/lewo). 
 
 Posuszanie wężem polega na sprawdzaniu stanów poszczególnych pinów. Przykładowo, gdy ostatnio odczytany stan wysoki wystąpił na pinie nr 2, nasz wąż zacznie poruszać się w prawo (o ile jest to możliwe, tj. nie poruszał się uprzednio w lewo). Jeżeli nie jest odczytywany obecnie stan wysoki na żadnym z pinów, to wąż kontynuuje poruszanie się w ostatnio wybranym kierunku. W przypadku, gdy odczytany ruch jest przeciwny do obecnego, sygnał odebrany z $(GPIO)$ zostanie zignorowany.
 
