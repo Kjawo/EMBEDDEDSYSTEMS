@@ -206,17 +206,18 @@ Do projektu wykorzystano LPC1343 i Expansion Board.
 
 %\subsubsection{Urządzenia peryferyjne}
 \begin{itemize}
-	\item Timer
-	\item GPIO
-	\item ADC
-	\item SPI/SSP
-	\item I$^2$C
-	\item Wyświetlacz siedmiosegmentowy
-	\item Wyświetlacz LCD
-	\item Przerwania
-	\item DAC
-	\item Akcelerometr
-	\item Czujnik światła
+	\item Timer;
+	\item GPIO;
+	\item ADC;
+	\item SPI/SSP;
+	\item I$^2$C;
+	\item Wyświetlacz siedmiosegmentowy;
+	\item Wyświetlacz LCD;
+	\item Przerwania;
+	\item DAC;
+	\item Akcelerometr;
+	\item Czujnik światła;
+	\item Diody LED -- Ekspander (PCA 9532);
 \end{itemize}
 \subsubsection{Dokumentacja}
 Opis poszczególnych funkcjonalności: Filip Turoboś
@@ -243,10 +244,12 @@ Podczas gry w Procesja$^{\textrm{TM}}$ gracz manewruje przy pomocy joysticka i/l
 	\item zbierać pojawiające się na planszy kropki symbolizujące zbłąkane owieczki.
 \end{itemize}
 
-W przypadku gdy gracz najedzie łamaną na pulsującą kropkę, całość procesji zostaje przedłużona. Radując się z ilości zgromadzonych wiernych możemy odgrywać pieśń religijna \textit{"Barka"}.
+W przypadku gdy gracz najedzie łamaną na pulsującą kropkę, całość procesji zostaje przedłużona. Radując się z ilości zgromadzonych wiernych możemy odgrywać pieśń religijną \textit{"Barka"}.
 
 \section{Algorytm gry}
+Gra działa na zasadzie popularnej gry Snake -- procesja porusza poprzez usunięcie ostatniej kropki (ostatniego segmentu symbolizującego wiernego) i dodaniu kropki symbolizującej proboszcza na początku procesji. Rozpoczęcie gry polega na zainicjalizowaniu pięciu kropek tworzących procesję na środku poziomu (poziom ma wymiary $32 \times 21$ punktów) oraz utworzeniu kropki wiernego w losowym miejscu na planszy.
 
+Procesja porusza się ruchem jednostajnym w ostatnim wskazanym przez gracza kierunku (początkowo w górę). Pochód może przechodzić przez \textit{ścianki} poziomu, kontynuuje on wówczas swój ruch po przeciwnej stronie ekranu (poziom jest \textit{de facto} homeomorficzny z torusem). Przy każdym ruchu procesji obliczana jest odległość proboszcza (początku procesji) od zbłąkanej owieczki, która mruga. Gdy odległość ta wynosi nie więcej niż $TOLERANCE$ (zmienna oznaczająca precyzję wymaganą od gracza, domyślnie ma wartość zero) wierny dołącza do pochodu, wydłużając długość procesji o jeden. Fakt ten sygnalizowany jest błyśnięciem diodami LED. Ponadto w losowym miejscu pojawia się nowa zbłądana owieczka. Jeżeli czoło pochodu zderzy się z jego częścią (lub zostanie zakryty czujnik światła) to gra się restartuje, wracając do stanu początkowego. 
 \section{Funkcjonalności}
 \subsection{Timer}
 Układ, który dekrementuje lub inkrementuje wartość jednego ze swoich rejestrów w zależności od częstotliwości otrzymywanego sygnału nazywamy \textbf{timerem}. Każdy timer jest wyposażony w dwa podstawowe rejestry -- licznik timera i rejestr kontroli timera. W przypadku płytki LPC 1343 timer jest dodatkowo wyposażony w preskaler. Zwiększenie licznika timera $(TC)$ -- \textit{timer counter} następuje po spełnieniu następujących warunków:
@@ -369,28 +372,31 @@ LPC_GPIO1->DATA |= (0x1<<2)
 \begin{center}
 	\hspace*{-50pt}\begin{tabular}{|c|c|c|c|c|}\hline
 		Możliwa awaria & Prawdopodobieństwo & Reakcja & Istotność & Iloczyn  \\ \hline\hline % <-- note that two \hlines produce a double line
-		Uszkodzenie wyświetlacza LCD & Niewielkie $0.01$ & Nie & Krytyczna $10$ & $0.1$ \\ \hline
-		Uszkodzenie czujnika światła & Małe $0.02$ & Nie & Krytyczna $10$ & $0.2$ \\ \hline
-		Uszkodzenie joysticka & \'Srednie $0.2$ & Tak & Wysoka $8$ & $1.6$ \\ \hline
-		Uszkodzenie akcelerometru & \'Srednie $0.3$ & Tak & \'Srednia $6$ & $1.8$ \\ \hline
-		Uszkodzenie wyświetlacza 7segmentowego & Znikome $0.01$ & Nie & Zerowa $0.1$ & $0.001$ \\ \hline
+		Uszkodzenie wyświetlacza LCD & Niewielkie $0.05$ & Nie & Krytyczna $10$ & $0.5$ \\ \hline
+		Uszkodzenie czujnika światła & Małe $0.08$ & Nie & Krytyczna $10$ & $0.8$ \\ \hline
+	\color{red}	Uszkodzenie joysticka &\color{red} \'Srednie $0.2$ &\color{red} Tak &\color{red} Wysoka $8$ &\color{red} $1.6$ \\ \hline
+	\color{red}	Uszkodzenie akcelerometru &\color{red} \'Srednie $0.3$ &\color{red} Tak &\color{red} \'Srednia $6$ &\color{red} $1.8$ \\ \hline
+	\color{black}Uszkodzenie wyświetlacza 7segmentowego & Znikome $0.01$ & Nie & Zerowa $0.1$ & $0.001$ \\ \hline
 	\end{tabular}
 \end{center}
 	\subsection{Uszkodzenie wyświetlacza LCD}
-	Możliwe uszkodzenie wyświetlacza LCD spowoduje całkowitą niegrywalność
-		\subsubsection{Rozpoznanie}
-		\subsubsection{Reakcja}
-	\subsection{Uszkodzenie joysticka}
-		\subsubsection{Rozpoznanie}
-		\subsubsection{Reakcja}
+	Możliwe uszkodzenie wyświetlacza LCD spowoduje całkowitą niegrywalność. Nawet jeżeli możliwa byłaby autodiagnostyka tego przypadku, uznano że urządzenie miałoby nikłe szanse na sensowną reakcję na wypadek tego typu awarii.
 	\subsection{Uszkodzenie akcelerometru}
 	Uszkodzenie akcelerometru może powodować błędy w zachowaniu się procesji -- mianowicie mogłoby sprawić, że kierunek poruszania się procesji zostanie ustalony i niezależnie od wykonywanych przez gracza manewrów gra nieprzerwanie próbować będzie odczytać wskazania akcelerometra i poruszać procesją zgodnie z tymi odczytami.
 	\subsubsection{Rozpoznanie}
 	Przy uruchomieniu zakładamy, że płytka jest ustawiona w pozycji horyzontalnej na płaskiej powierzchni i oddziałuje na nią wektor przyspieszenia grawitacyjnego $1g$ skierowany pionowo w dół, tj. o współrzędnych $(0,0,-1)$. Następnie obliczany jest kwadrat długości obecnie odczytanego przez akcelerometr wektora przyspiesznia. Jeżeli wartość normy odczytanego wektora przyspieszenia $X$ przy przyjmowanym zakresie akcelerometru (wynoszącym $2g$) mieści się w przedziale
-	$$0.78125 = \frac{2500}{4096} g < \| X \| < \frac{6000}{4096} \simeq 1.210307 ,$$
-	odczyty uznajemy za poprawne. W przypadku wystąpienia odczytu wykraczającego poza ten zakres, program uznaje joystick za uszkodzony.
+	$$0.78125\;g = \frac{2500}{4096}\; g \; < \| X \| \; < \; \frac{6000}{4096}\; g \simeq 1.210307\; g ,$$
+	odczyty uznajemy za poprawne. W przypadku wystąpienia odczytu wykraczającego poza ten zakres, program uznaje akcelerometr za uszkodzony.
 	%Na akcelerometrze 64 = 1g 
 	\subsubsection{Reakcja}
+	Zmienna opisująca poprawność działania akcelerometru zostaje ustawiona na wartość $BROKEN = 0$. W wyniku tego kolejne wykonania głównej pętli programu nie uwzględniają już odczytywania wartości wskazywanych przez akcelerometr. Wprawdzie uniemożliwia to dalsze sterowanie przy pomocy akcelerometru (przynajmniej do czasu ponownego uruchomienia urządzenia), aczkolwiek nadal możliwe jest granie w Procesję przy pomocy joysticka.
+	\subsection{Uszkodzenie joysticka}
+	Uszkodzenie manipulatora drążkowego może spowodować odczytywanie wskazań, które nie zmieniają się lub zmieniają się w sposób całkowicie losowy. W naszej analizie skupiliśmy się na pierwszym przypadku, który uznaliśmy za dużo bardziej prawdopodobny. Wystąpienie takiej awarii sprawiłoby, że procesja (niezależnie od życzenia użytkownika i sterowania akcelerometrem) poruszałaby się w jednym kierunku, skutecznie uniemożliwiając zabawę.
+	\subsubsection{Rozpoznanie}
+	W zmiennej \textit{prev\_state} przechowywany jest poprzedni odczyt z joysticka. 
+	Jeżeli wskazania nie zmieniają się przez ustalony czas (odpowiadający stu wykonaniom pętli), uznajemy, że nastąpiła awaria. Wyjątek od tej reguły stanowi sytuacja, gdy wskazywane jest położenie joysticka w pozycji $0$ (nienaciśniętej). 
+	\subsubsection{Reakcja}
+	Gdy rozpoznana zostaje awaria urządzenia peryferyjnego manipulatora drążkowego następuje zaprzestanie odczytywania wskazań tegoż manipulatora. Wznowienie odczytu nie następuje -- aby grać dalej należy korzystać z akcelerometra. W przypadku gdy chcemy korzystać z joysticka należy zrestartować urządzenie.
 	
 	\subsection{Uszkodzenie wyświetlacza 7segmentowego}
 	Uszkodzenie wyświetlacza siedmiosegmentowego ma jedynie znaczenie kosmetyczne i nie wpływa w żaden sposób na działanie całości programu. W związku z tym nie zużywamy mocy obliczeniowej na sprawdzanie poprawności jego działania ani nie reagujemy na jego ewentualne uszkodzenie.

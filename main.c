@@ -19,7 +19,6 @@
 
 #include <stdlib.h>
 
-//THESE SHOUD BE DEFINED IN TIMER32.H OR SMTHNG
 #define TIMER_RESET     _BIT(1)
 #define TIMER_RUN       _BIT(0)
 #define MR0_I           _BIT(0)
@@ -44,7 +43,6 @@
 #define TIMER_CR2_INT        _BIT(6)
 #define TIMER_CR3_INT        _BIT(7)
 #define TIMER_ALL_INT        (TIMER_MR0_INT | TIMER_MR1_INT | TIMER_MR2_INT | TIMER_MR3_INT | TIMER_CR0_INT | TIMER_CR1_INT | TIMER_CR2_INT | TIMER_CR3_INT)
-//END THESE SHOUD BE DEFINED IN TIMER32.H OR SMTHNG
 
 uint8_t is_play_song = TRUE;
 
@@ -129,8 +127,8 @@ static void processSnake (uint8_t controlsState) {
 	if (virgin) {
 		virgin = FALSE;
 		for (int i = currentLength; i>0; i--) {
-			snake[i].x = OLED_DISPLAY_WIDTH / 2;
-			snake[i].y = OLED_DISPLAY_HEIGHT / 2;
+			snake[i].x = LEVEL_WIDTH / 2;
+			snake[i].y = LEVEL_HEIGHT / 2;
 		}
 		dot.x = rand() % LEVEL_WIDTH;
 		dot.y = rand() % LEVEL_HEIGHT;
@@ -182,7 +180,7 @@ static void processSnake (uint8_t controlsState) {
 	//check if head is close enough to dot
 	const int TOLERANCE=0;
 	if (xHeadToDot <= TOLERANCE && yHeadToDot <= TOLERANCE) {
-		//extend snake length by 4
+		//extend snake length by 1
 		uint16_t newTail = (currentHead + 1) % currentLength;
 		snake[currentLength].x = snake[newTail].x;
 		snake[currentLength].y = snake[newTail].y;
