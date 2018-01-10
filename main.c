@@ -48,9 +48,12 @@
 
 uint8_t is_play_song = TRUE;
 
+#define PAUSE 2
 #define BROKEN 1
 #define GOOD 0
+#define STOPJOYSTICK 100
 
+uint32_t joystick_status=0;
 uint8_t acc_status = GOOD;
 
 static void putSquare(uint8_t x, uint8_t y, oled_color_t color) {
@@ -62,6 +65,27 @@ static void putSquare(uint8_t x, uint8_t y, oled_color_t color) {
 			oled_putPixel(x + j, y + i, color);
 		}
 	}
+}
+
+void blinkLEDs (uint8_t ctr) {
+	static uint8_t counter;
+
+	if (ctr != 0) {
+		counter = ctr;
+		return;
+	} else if (counter == 0) {
+		return;
+	}
+
+	if (counter == 1) {
+		pca9532_setLeds(0x0000, 0xffff);
+	} else if (counter%2) {
+		pca9532_setLeds(0xff00, 0x00ff);
+	} else {
+		pca9532_setLeds(0x00ff, 0xff00);
+	}
+
+	counter -= 1;
 }
 
 typedef enum{CENTER, UP, DOWN, RIGHT, LEFT} directions;
@@ -163,7 +187,7 @@ static void processSnake (uint8_t controlsState) {
 				snake[currentLength].x = snake[newTail].x;
 				snake[currentLength].y = snake[newTail].y;
 				currentLength++;
-                //blinkLEDs();
+				blinkLEDs(7);
                 //play song
                 if (currentLength%5 == 0) {
                         is_play_song = TRUE;
@@ -195,16 +219,6 @@ static void processSnake (uint8_t controlsState) {
 			hasSnake[snake[currentHead].y][snake[currentHead].x] = TRUE;
         }
 
-}
-
-void blinkLEDs () {
-        pca9532_setLeds(0xff00, 0x0000);
-        delay32Ms(0, 100);
-        pca9532_setLeds(0x00ff, 0xff00);
-        delay32Ms(0, 100);
-        pca9532_setLeds(0xff00, 0x00ff);
-        delay32Ms(0, 100);
-        pca9532_setLeds(0x0000, 0xff00);
 }
 
 //pitch in Hz
@@ -365,6 +379,8 @@ int main (void) {
 
     int16_t snek_speed = 10;
     uint8_t state = 0;
+    uint8_t prev_state = 0;
+    uint32_t joystick_counter = 0;
     uint8_t acc_state = 0; //0bLeftRightDownUpCenter
 /*
     uint8_t btn1 = 0;light_setRange
@@ -372,9 +388,6 @@ int main (void) {
 
     GPIOInit();
     init_timer32(0, 10);
-
-    UARTInit(115200);
-    UARTSendString((uint8_t*)"Demo\r\n");
 
     I2CInit( (uint32_t)I2CMASTER, 0 );
     SSPInit();
@@ -427,7 +440,7 @@ int main (void) {
     oled_clearScreen(OLED_COLOR_BLACK);
 
     //init_timer32(1, snek_speed);
-//#define NO_MUSIC
+#define NO_MUSIC
 #ifndef NO_MUSIC
     int_init(/*snek_speed*/ 10);
 #endif
@@ -442,12 +455,10 @@ int main (void) {
         led7seg_setChar(letters_state % letters_speed ? letters[letters_state / letters_speed] : ' ', FALSE);
         letters_state++;
 
-        //changeRgbLeds(trim);
+        blinkLEDs(0);
 
         int16_t new_snek_speed = 4000 / ADCRead(0) + 20;
         if (new_snek_speed != snek_speed) {
-            //LPC_TMR32B1->TC = 0;
-            //LPC_TMR32B1->MR0 = new_snek_speed;
             snek_speed = new_snek_speed;
         }
 
@@ -473,9 +484,32 @@ int main (void) {
 			}
         }
 
-        state = joystick_read();
+        if (joystick_status != BROKEN) {
+        	state = joystick_read();
+			if (state == prev_state) {
+				joystick_counter += 1;
+			} else {
+				joystick_counter = 0;
+			}
 
-        processSnake(state|acc_state);
+			prev_state = state;
+
+			if (joystick_counter == STOPJOYSTICK) {
+				if ((state|acc_state) != 0) {
+					joystick_status = BROKEN;
+					state = 0;
+					joystick_counter = 0;
+				} else {
+					joystick_status = PAUSE;
+				}
+			}
+        }
+
+        if (joystick_status != PAUSE) {
+			processSnake(state|acc_state);
+        } else if (state != 0) {
+        	joystick_status = GOOD;
+        }
 
         delay32Ms(0, snek_speed);
     }
