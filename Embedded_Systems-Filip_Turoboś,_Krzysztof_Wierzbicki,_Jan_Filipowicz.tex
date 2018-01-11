@@ -212,7 +212,7 @@ Do projektu wykorzystano LPC1343 i Expansion Board.
 	 SPI/SSP&{Krzysztof Wierzbicki}\\ \hline
 	 I$^2$C&{Jan Filipowicz}\\ \hline
 	 Wyświetlacz siedmiosegmentowy&{Turoboś Filip}\\ \hline
-	 Wyświetlacz LCD&{Krzysztof Wierzbicki}\\ \hline
+	 Wyświetlacz OLED&{Krzysztof Wierzbicki}\\ \hline
 	 Przerwania&{Jan Filipowicz}\\ \hline
 	 Melodia&{Krzysztof Wierzbicki}\\ \hline
 	 Akcelerometr&{Turoboś Filip}\\ \hline
@@ -456,17 +456,17 @@ $\quad$ 3.3 Zwiększamy wartość letters\_state o jeden.
 \begin{verbatim}
 letters_state++;
 \end{verbatim}
-\subsection{Wyświetlacz LCD}
+\subsection{Wyświetlacz OLED}
 
 Komunikacja przebiega za pomocą interfejsu SPI, a przesyłane dane są 8-bitowe. 
-Aby wysłać dane należy ustawić kontroler ekranu OLED jako slave (wartość 0 na lini SSEL(PORT0\_2).
+Aby wysłać dane należy ustawić kontroler ekranu OLED jako slave (wartość 0 na lini SSEL(port 0 bit 2).
 Interpretacja przesyłanych zależy od sygnału ustawionego na 7 bicie portu 2. W przypadku gdy
 jest on 1 przesyłane dane są interpretowane jako dane, w przeciwnym wypadku jako komendy. 
 
 
 Wyświetlacz składa się z 8 stron (każda to fragment ekranu o pełnej szerokości i wysokości 8 pikseli), 
 z których każda ma 136 bajtów (maksymalna szerokość ekranu obsługiwana przez kontroler), a każdy bajt opisuje 
-osiem pikseli o kolejnych współrzędnych y.
+osiem pikseli o kolejnych współrzędnych $y$.
 Ustawienie koloru pojedynczego piksela polega na wysłaniu jako komenda adresu strony (\verb|0xB0|...\verb|0xB7|), 
 następnie adresu bajtu \verb|0bABCDEFGH| w postaci kolejnych bajtów 
 \verb|0b0000EFGH| i \verb|0b0001ABCD|. Następnie jako dane wysyłamy pod ustawiony adres maskę, gdzie wartość 1 oznacza biały piksel a wartość 0 czarny.
