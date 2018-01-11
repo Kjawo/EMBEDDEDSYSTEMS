@@ -480,20 +480,29 @@ Korzystamy z $32$-bitowego timera $1$ (CT32B1) o preskalerze ustawionym na $1$ m
 Przerwania użytego timera obsługuje funkcja \mbox{TIMER32\_1\_IRQHandler}, której adres jest przechowywany w zerowym bloku pamięci RAM wraz z innymi procedurami obsługi zdarzeń. Obsługa tego przerwania zaczyna się w naszym przypadku od ustawienia zerowego bitu rejestru TMR32B1 IR w celu zresetowania przerwania. W ogólnym przypadku należałoby odczytać ów rejestr, aby ustalić rodzaj zdarzenia, i następnie ustawić bit w zależności od tego rodzaju, jednak nasz program generuje tylko jeden rodzaj przerwań z timera, więc byłoby to zbędne. Potem następuje właściwa część obsługi służąca odegraniu melodii. Ta część ustawia również rejestr MR0 na ilość czasu daną w mikrosekundach, po której powinno zajść kolejne przerwanie, co zależy od częstotliwości obecnie granej nuty lub długości obecnej pauzy.
 
 \subsection{Głośnik (GPIO) -- Melodia}
-Aby zainicjalizować głośniczek ustawiamy kierunek 
-\begin{verbatim}
-LPC_GPIO1->DATA |= (0x1<<2)
-\end{verbatim}
-
+%Aby zainicjalizować głośniczek ustawiamy kierunek 
+%\begin{verbatim}
+%LPC_GPIO1->DATA |= (0x1<<2)
+%\end{verbatim}
+Odgrywanie melodii realizowane jest w handlerze przerwania 32 bitowego timera nr 1 i kontrolowane za pomocą zmiennej
+\verb|is_play_song|. Jeżeli jej wartość logiczna odpowiada prawdzie, zaczyna się przetwarzanie. Melodia jest zapisana jako ciąg znaków, 
+gdzie każde kolejne trzy oznaczają wysokość dźwięku (zakodowana jako litery a-g i A-G), długość jego trwania (zakodowana jako znak 0-9) i długość następującej 
+po dźwięku pauzy (zakodowana jako jeden ze znaków [+.-\_]). Z ciągu odczytywana jest wysokość dźwięku, dekodowana jest jako wysokość dźwięku w hercach 
+(między 262 a 988 Hz), długość dźwięku w milisekundach (między 0 a 1800 ms) oraz długość pauzy w milisekundach (między 0 a 30 ms).
+Następnie rejestr \verb|MR0| jest ustawiany na połowę okresu dźwięku o danej częstotliwości w mikrosekundach \[ 1000000[\mu s/s]/(pitch[Hz] \cdot 2),\] 
+licznik ustawiany jest ilość zmian sygnału w danym dźwięku \[(duration[ms] * 1000[\mu s/ms])/half\_period[ms].\] Następnie w związku z przestawieniem rejestru \verb|MR0| 
+funkcja jest wywoływana co połowę okresu i za każdym razem nastepuje zmiana sygnału przekazywanego na głośnik -- w ten sposób odtwarzany jest dźwięk. 
+Po zakończeniu odtwarzania dźwięku \verb|MR0| zostaje ustawiony na długość pauzy w milisekundach, a przy następnym wywołaniu (po zakończeniu trwania pauzy) 
+rejestr \verb|MR0| zostaje ustawiony na 1000 [ms] i algorytm oczekuje na kolejny sygnał odtworzenia melodii.
 \subsection{Akcelerometr}
 \textbf{Akcelerometr} to urządzenie zdolne do wykrycia i pomiaru oddziałującego nań wektora przyspieszenia. W proponowanym przez nas programie służy on jako alternatywna dla joysticka metoda sterowania procesją. Gracz przechylając w odpowiednim kierunku mikrokomputer sprawia, że procesja skręca we wskazaną stronę.
 
 Zastosowany w naszym układzie akcelerometr MMA7455L jest inicjowany przez zdefiniowanie trybu pomiaru i zakresu poprzez przypisanie (przy pomocy I$^2$C) do rejestru MCR (\textit{Mode Control Register} o adresie \verb|0x16|) wartości 1 na bit zerowy i drugi (przejście w \textit{Measurement Mode}, tj. tryb pomiarowy przy zakresie $2 \; g$, przekładający się na większą precyzję pomiaru \cite{ACCEL}).
 
 Przy odczycie najpierw sprawdzamy rejestr statusu akcelerometru o adresie \verb|0x09|. Zerowy bit tego rejestru -- oznaczony przez DRDY -- informuje nas, czy dane są gotowe do odczytania. Jeżeli tak, to z rejestru o adresie \verb|0x06| pobierany jest  
-odczyt $8$ bitów opisujących składową $X$ wektora przyspieszenia. Następnie odczytywane są wartości z rejestrów \verb|0x07| i \verb|0x08| odnoszące się odpowiednio do składowych $Y$ i $Z$.
+odczyt $8$ bitów opisujących składową $X$ wektora przyspieszenia. Następnie odczytywane są wartości z rejestrów \verb|0x07| i \verb|0x08| odnoszące się odpowiednio do składowych $Y$ i $Z$. Warto zauważyć, że współrzędna $Z$ służy jedynie do autodiagnostyki urządzenia. Nie bierze ona udziału w sterowaniu procesją w sposób bezpośredni.
 
-Następnie, jeżeli odczytane wartości 
+Następnie, jeżeli odczytane wartości na współrzędnych $X$ oraz $Y$ przekraczają (co do modułu) wartość $\frac{10}{64} \; g$, to ustawiane są odpowiednie (1/2 dla kierunków góra/dół, 3/4 dla kierunków prawo/lewo) bity zmiennej sterującej, która (po wykonaniu bitowej operacji OR ze zmienną przechowującą odczyt z joysticka) zostaje przekazana do funkcji odpowiadającej za przetwarzanie procesji.
 
 \subsection{Czujnik \'Swiatła}
 Czujnik światła przyłączony jest do płytki magistralą I$^2$C \cite{LUX}. Pod adres szyną I$^2$C \verb|(0x44 << 1)| przesyłane są wartości (kolejno) \{\verb|0x00|, \verb|(1 << 7)|\}. Powoduje to ustawienie wartości $1$ na siódmym bicie rejestru Command Register. Bit ten odpowiada za uruchomienie stosownego przetwornika analogowo-cyfrowego w czujniku.
