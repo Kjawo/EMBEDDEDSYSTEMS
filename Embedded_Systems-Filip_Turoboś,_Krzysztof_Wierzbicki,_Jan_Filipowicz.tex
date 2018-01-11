@@ -206,34 +206,36 @@ Do projektu wykorzystano LPC1343 i Expansion Board.
 
 %\subsubsection{Urządzenia peryferyjne}
 \begin{itemize}
-	\item Timer;
-	\item GPIO;
-	\item ADC;
-	\item SPI/SSP;
-	\item I$^2$C;
-	\item Wyświetlacz siedmiosegmentowy;
-	\item Wyświetlacz LCD;
-	\item Przerwania;
-	\item DAC;
-	\item Akcelerometr;
-	\item Czujnik światła;
-	\item Diody LED -- Ekspander (PCA 9532);
+	\item Timer;\qquad\qquad\qquad\qquad\qquad{Krzysztof Wierzbicki}
+	\item GPIO;\qquad\qquad\qquad\qquad\qquad{Jan Filipowicz}
+	\item ADC; \qquad\qquad\qquad\qquad\qquad{Turoboś Filip}
+	\item SPI/SSP;\qquad\qquad\qquad\qquad\qquad{Jan Filipowicz}
+	\item I$^2$C; \qquad\qquad\qquad\qquad\qquad{Krzysztof Wierzbicki}
+	\item Wyświetlacz siedmiosegmentowy; \qquad{Turoboś Filip}
+	\item Wyświetlacz LCD; \qquad\qquad\qquad\qquad{Krzysztof Wierzbicki}
+	\item Przerwania; \qquad\qquad\qquad\qquad\qquad{Krzysztof Wierzbicki}
+	\item DAC; \qquad\qquad\qquad\qquad\qquad\qquad\qquad{Jan Filipowicz}
+	\item Akcelerometr; \qquad\qquad\qquad\qquad\qquad{Krzysztof Wierzbicki}
+	\item Czujnik światła; \qquad\qquad\qquad\qquad\qquad{Turoboś Filip}
+	\item Diody LED -- Ekspander (PCA 9532); \qquad\qquad\qquad\qquad\qquad{Turoboś Filip}
 \end{itemize}
-\subsubsection{Dokumentacja}
-Opis poszczególnych funkcjonalności: Filip Turoboś
+\subsubsection{Dokumentacja, analiza FMEA i inne uwagi}
+Algorytm Gry: Jan Filipowicz;
+Analiza FMEA: Cały zespół;
+Skład i opracowanie całości dokumentu: Filip Turoboś;
 
-Skład i opracowanie całości dokumentu: Filip Turoboś
+W naszym odczuciu praca w zespole została rozłożona stosunkowo równomiernie. Nad niemal każdą z funkcjonalności i ich opisem pracowaliśmy całym zespołem.
 
 \subsubsection{Procentowy udział poszczególnych członków zespołu w tworzeniu końcowej wersji projektu}
 $\begin{array}{|l|l|l|}
 \hline
 \textrm{Imię i nazwisko: }& \textrm{Procentowy udział: }\\
 \hline
- \textrm{Filip Turoboś}&\textrm{ 30\%}\\
+ \textrm{Filip Turoboś}&\textrm{ 33\%}\\
 \hline
-\textrm{Jan Filipowicz}&\textrm{	38\% 	}\\
+\textrm{Jan Filipowicz}&\textrm{	33\% 	}\\
 \hline
-\textrm{Krzysztof Wierzbicki}& \textrm{32\%}\\
+\textrm{Krzysztof Wierzbicki}& \textrm{34\%}\\
 \hline
 \end{array}$
 \newpage
@@ -261,15 +263,15 @@ Po inkrementacji $(TC)$ następuje wyzerowanie licznika preskalera.
 
 Aby uruchomić timer należy:
 \begin{itemize}
-	\item uruchomić przesyłanie sygnału zegarowego do 32-bitowego timera o numerze zero (C32B0) \cite{INST}: 
+	\item uruchomić przesyłanie sygnału zegarowego do 32-bitowego timera o numerze zero (CT32B0) \cite{INST}: 
 	\begin{verbatim}
 	LPC_SYSCON->SYSAHBCLKCTRL |= (1<<9);
 	\end{verbatim}
-	\item wybrać pin 5 z portu 1 do odbierania sygnału z wejścia input 0 C32B0
-	\item ustawiamy wejście sygnału z match registrów 0 - 2 port1.6, 1.7, 0.1
-	\item w match registrze timera ustawiamy interwał
-	\item w match control registrze ustawiamy \verb|0b11| - wyślij przerwanie i zresetuj jeżeli MR0
-	\item włączamy przerwania 
+	\item wybrać pin 5 z portu 1 do odbierania sygnału z wejścia input 0 CT32B0 ;
+	\item ustawiamy wejście sygnału z match registrów 0 - 2 porty 1.6, 1.7, 0.1 ;
+	\item w match registrze timera ustawiamy interwał;
+	\item w match control registrze TMR32B0MCR ustawiamy \verb|0b11| - wyślij przerwanie i zresetuj jeżeli MR0 (zgodnie ze stroną 287 \cite{INST});
+	\item włączamy przerwania.
 \end{itemize}
 
 \subsection{GPIO}
@@ -277,7 +279,7 @@ Skrót $(GPIO)$ oznacza \textit{General purpose input/output}, czyli \textbf{int
 
 Aby używać joysticka musimy najpierw ustalić rolę odpowiednich pinów na \textit{INPUT}. W naszym przypadku stosowane jest port nr 2 i piny od $0$ do $4$, odpowiadających za poszczególne kierunki (odpowiednio centrum/dół/prawo/góra/lewo). 
 
-Posuszanie wężem polega na sprawdzaniu stanów poszczególnych pinów. Przykładowo, gdy ostatnio odczytany stan wysoki wystąpił na pinie nr 2, nasz wąż zacznie poruszać się w prawo (o ile jest to możliwe, tj. nie poruszał się uprzednio w lewo). Jeżeli nie jest odczytywany obecnie stan wysoki na żadnym z pinów, to wąż kontynuuje poruszanie się w ostatnio wybranym kierunku. W przypadku, gdy odczytany ruch jest przeciwny do obecnego, sygnał odebrany z $(GPIO)$ zostanie zignorowany.
+Posuszanie procesją polega na sprawdzaniu stanów poszczególnych pinów. Przykładowo, gdy ostatnio odczytany stan wysoki wystąpił na pinie nr 2, nasz wąż zacznie poruszać się w prawo (o ile jest to możliwe, tj. nie poruszał się uprzednio w lewo). Jeżeli nie jest odczytywany obecnie stan wysoki na żadnym z pinów, to wąż kontynuuje poruszanie się w ostatnio wybranym kierunku. W przypadku, gdy odczytany ruch jest przeciwny do obecnego, sygnał odebrany z $(GPIO)$ zostanie zignorowany.
 
 
 
