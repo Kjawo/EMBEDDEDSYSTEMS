@@ -226,7 +226,7 @@ Algorytm Gry: Jan Filipowicz;
 
 \noindent Skład i opracowanie całości dokumentu: Filip Turoboś;
 
-W naszym odczuciu praca w zespole została rozłożona stosunkowo równomiernie. Nad niemal każdą z funkcjonalności (a także opisem w dokumentacji)pracowaliśmy całym zespołem.
+W naszym odczuciu praca w zespole została rozłożona stosunkowo równomiernie. Nad niemal każdą z funkcjonalności (a także opisem w dokumentacji) pracowaliśmy całym zespołem.
 
 \subsubsection{Procentowy udział poszczególnych członków zespołu w tworzeniu końcowej wersji projektu}
 $\begin{array}{|l|l|l|}
@@ -406,7 +406,7 @@ Ostatecznie częstotliwośc SPI to 30MHz.
 
 Następnie w kontrolerze przerwań włączamy przerwania SSP.
 
-Transmisja po SPI polega na kolejno dla każdego bajtu informacji odczekaniu aż zniknie status "zajęty" (BSY) w rejestrze kontrolnym \verb|LPC_SSP->SR|,
+Transmisja po SPI (dla każdego bajtu informacji) polega kolejno na: odczekaniu aż zniknie status "zajęty" (BSY) w rejestrze kontrolnym \verb|LPC_SSP->SR|,
 a następnie przesłniu do rejestru danych \verb|LPC_SSP->DR| jednego bajtu z bufora. 
 
 
@@ -458,6 +458,19 @@ letters_state++;
 \end{verbatim}
 \subsection{Wyświetlacz LCD}
 
+Komunikacja przebiega za pomocą interfejsu SPI, a przesyłane dane są 8-bitowe. 
+Aby wysłać dane należy ustawić kontroler ekranu OLED jako slave (wartość 0 na lini SSEL(PORT0\_2).
+Interpretacja przesyłanych zależy od sygnału ustawionego na 7 bicie portu 2. W przypadku gdy
+jest on 1 przesyłane dane są interpretowane jako dane, w przeciwnym wypadku jako komendy. 
+
+
+Wyświetlacz składa się z 8 stron (każda to fragment ekranu o pełnej szerokości i wysokości 8 pikseli), 
+z których każda ma 136 bajtów (maksymalna szerokość ekranu obsługiwana przez kontroler), a każdy bajt opisuje 
+osiem pikseli o kolejnych współrzędnych y.
+Ustawienie koloru pojedynczego piksela polega na wysłaniu jako komenda adresu strony (\verb|0xB0|...\verb|0xB7|), 
+następnie adresu bajtu \verb|0bABCDEFGH| w postaci kolejnych bajtów 
+\verb|0b0000EFGH| i \verb|0b0001ABCD|. Następnie jako dane wysyłamy pod ustawiony adres maskę, gdzie wartość 1 oznacza biały piksel a wartość 0 czarny.
+
 \subsection{Przerwania (Interrupts)}
 
 \textbf{Przerwanie} to sygnał dla procesora pochodzący ze sprzętu bądź oprogramowania, informujący o zajściu zdarzenia wymagającego natychmiastowego przetworzenia. Procesor, otrzymawszy taki sygnał, zawiesza wykonywanie obecnego kodu, zachowuje swój stan, i przechodzi do przetwarzania przerwania. Nasz program wykorzystuje przerwania z zegara (\textit{timer}) w celu odtwarzania melodii niezależnie od algorytmu gry.
@@ -473,9 +486,17 @@ LPC_GPIO1->DATA |= (0x1<<2)
 \end{verbatim}
 
 \subsection{Akcelerometr}
+\textbf{Akcelerometr} to urządzenie zdolne do wykrycia i pomiaru oddziałującego nań wektora przyspieszenia. W proponowanym przez nas programie służy on jako alternatywna dla joysticka metoda sterowania procesją. Gracz przechylając w odpowiednim kierunku mikrokomputer sprawia, że procesja skręca we wskazaną stronę.
+
+Zastosowany w naszym układzie akcelerometr MMA7455L jest inicjowany przez zdefiniowanie trybu pomiaru i zakresu poprzez przypisanie (przy pomocy I$^2$C) do rejestru MCR (\textit{Mode Control Register} o adresie \verb|0x16|) wartości 1 na bit zerowy i drugi (przejście w \textit{Measurement Mode}, tj. tryb pomiarowy przy zakresie $2 \; g$, przekładający się na większą precyzję pomiaru \cite{ACCEL}).
+
+Przy odczycie najpierw sprawdzamy rejestr statusu akcelerometru o adresie \verb|0x09|. Zerowy bit tego rejestru -- oznaczony przez DRDY -- informuje nas, czy dane są gotowe do odczytania. Jeżeli tak, to z rejestru o adresie \verb|0x06| pobierany jest  
+odczyt $8$ bitów opisujących składową $X$ wektora przyspieszenia. Następnie odczytywane są wartości z rejestrów \verb|0x07| i \verb|0x08| odnoszące się odpowiednio do składowych $Y$ i $Z$.
+
+Następnie, jeżeli odczytane wartości 
 
 \subsection{Czujnik \'Swiatła}
-Czujnik światła przyłączony jest do płytki magistralą I$^2$C \cite{LUX}. Pod adres szyny I$^2$C \verb|(0x44 << 1)| przesyłane są wartości (kolejno) \{\verb|0x00|, \verb|(1 << 7)|\}. Powoduje to ustawienie wartości $1$ na siódmym bicie rejestru Command Register. Bit ten odpowiada za uruchomienie stosownego przetwornika analogowo-cyfrowego w czujniku.
+Czujnik światła przyłączony jest do płytki magistralą I$^2$C \cite{LUX}. Pod adres szyną I$^2$C \verb|(0x44 << 1)| przesyłane są wartości (kolejno) \{\verb|0x00|, \verb|(1 << 7)|\}. Powoduje to ustawienie wartości $1$ na siódmym bicie rejestru Command Register. Bit ten odpowiada za uruchomienie stosownego przetwornika analogowo-cyfrowego w czujniku.
 
 Ustawiamy następnie wartości 0 i 1 na (odpowiednio) bitach o numerach 2 i 3. Sprawia to, że zakres odczytu czujnika zmieni się z domyślnych $1000$ luksów do $4000$ luksów.
 
@@ -510,7 +531,7 @@ W programie czujnik światła został zastosowany do zrestartowania gry w momenc
 	Uszkodzenie akcelerometru może powodować błędy w zachowaniu się procesji -- mianowicie mogłoby sprawić, że kierunek poruszania się procesji zostanie ustalony i niezależnie od wykonywanych przez gracza manewrów gra nieprzerwanie próbować będzie odczytać wskazania akcelerometra i poruszać procesją zgodnie z tymi odczytami.
 	\subsubsection{Rozpoznanie}
 	Przy uruchomieniu zakładamy, że płytka jest ustawiona w pozycji horyzontalnej na płaskiej powierzchni i oddziałuje na nią wektor przyspieszenia grawitacyjnego $1g$ skierowany pionowo w dół, tj. o współrzędnych $(0,0,-1)$. Następnie obliczany jest kwadrat długości obecnie odczytanego przez akcelerometr wektora przyspiesznia. Jeżeli wartość normy odczytanego wektora przyspieszenia $X$ przy przyjmowanym zakresie akcelerometru (wynoszącym $2g$) mieści się w przedziale
-	$$0.78125\;g = \frac{2500}{4096}\; g \; < \| X \| \; < \; \frac{6000}{4096}\; g \simeq 1.210307\; g ,$$
+	$$0.78125\;g =\sqrt{ \frac{2500}{4096} }\; g \; < \| X \| \; < \; \sqrt{ \frac{6000}{4096} }\; g \simeq 1.210307\; g ,$$
 	odczyty uznajemy za poprawne. W przypadku wystąpienia odczytu wykraczającego poza ten zakres, program uznaje akcelerometr za uszkodzony.
 	%Na akcelerometrze 64 = 1g 
 	\subsubsection{Reakcja}
