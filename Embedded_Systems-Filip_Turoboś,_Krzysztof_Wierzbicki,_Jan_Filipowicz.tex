@@ -23,7 +23,7 @@
 \usepackage{titlesec}
 \usepackage{mathtools}
 \usepackage{cite}
-\linespread{1.5}
+\linespread{1.2}
 
 % marginesy, szerokość i wysokość tekstu-
 \setlength\topmargin{-0.25in}
@@ -123,10 +123,10 @@
 	\bigskip
 	\begin{flushright}
 		{\large 
-			lider: mgr Filip Turoboś %TU WPISZ SWOJE IMIĘ I NAZWISKO%
+			\textbf{lider: mgr Filip Turoboś} %TU WPISZ SWOJE IMIĘ I NAZWISKO%
 			\\
-			Nr albumu: 
-			210344 / 801147 %TU WPISZ SWÓJ NUMER ALBUMU%
+		\textbf{	Nr albumu: 
+			210344 / 801147} %TU WPISZ SWÓJ NUMER ALBUMU%
 			\\
 			Jan Filipowicz %TU WPISZ SWOJE IMIĘ I NAZWISKO%
 			\\
@@ -205,26 +205,28 @@ Do projektu wykorzystano LPC1343 i Expansion Board.
 %\subsubsection{MCU}
 
 %\subsubsection{Urządzenia peryferyjne}
-\begin{itemize}
-	\item Timer;\qquad\qquad\qquad\qquad\qquad{Krzysztof Wierzbicki}
-	\item GPIO;\qquad\qquad\qquad\qquad\qquad{Jan Filipowicz}
-	\item ADC; \qquad\qquad\qquad\qquad\qquad{Turoboś Filip}
-	\item SPI/SSP;\qquad\qquad\qquad\qquad\qquad{Jan Filipowicz}
-	\item I$^2$C; \qquad\qquad\qquad\qquad\qquad{Krzysztof Wierzbicki}
-	\item Wyświetlacz siedmiosegmentowy; \qquad{Turoboś Filip}
-	\item Wyświetlacz LCD; \qquad\qquad\qquad\qquad{Krzysztof Wierzbicki}
-	\item Przerwania; \qquad\qquad\qquad\qquad\qquad{Krzysztof Wierzbicki}
-	\item DAC; \qquad\qquad\qquad\qquad\qquad\qquad\qquad{Jan Filipowicz}
-	\item Akcelerometr; \qquad\qquad\qquad\qquad\qquad{Krzysztof Wierzbicki}
-	\item Czujnik światła; \qquad\qquad\qquad\qquad\qquad{Turoboś Filip}
-	\item Diody LED -- Ekspander (PCA 9532); \qquad\qquad\qquad\qquad\qquad{Turoboś Filip}
-\end{itemize}
+\begin{tabular}{|c|c|} \hline
+	 Timer&{Krzysztof Wierzbicki}\\ \hline
+	 GPIO&{Jan Filipowicz}\\ \hline
+	 ADC&{Turoboś Filip}\\ \hline
+	 SPI/SSP&{Krzysztof Wierzbicki}\\ \hline
+	 I$^2$C&{Krzysztof Wierzbicki}\\ \hline
+	 Wyświetlacz siedmiosegmentowy&{Turoboś Filip}\\ \hline
+	 Wyświetlacz LCD&{Krzysztof Wierzbicki}\\ \hline
+	 Przerwania&{Jan Filipowicz}\\ \hline
+	 Melodia&{Jan Filipowicz}\\ \hline
+	 Akcelerometr&{Turoboś Filip}\\ \hline
+	 Czujnik światła&{Turoboś Filip}\\ \hline
+	 Diody LED -- Ekspander (PCA 9532)&{Krzysztof Wierzbicki}\\ \hline
+\end{tabular}
 \subsubsection{Dokumentacja, analiza FMEA i inne uwagi}
 Algorytm Gry: Jan Filipowicz;
-Analiza FMEA: Cały zespół;
-Skład i opracowanie całości dokumentu: Filip Turoboś;
 
-W naszym odczuciu praca w zespole została rozłożona stosunkowo równomiernie. Nad niemal każdą z funkcjonalności i ich opisem pracowaliśmy całym zespołem.
+\noindent Analiza FMEA: Cały zespół;
+
+\noindent Skład i opracowanie całości dokumentu: Filip Turoboś;
+
+W naszym odczuciu praca w zespole została rozłożona stosunkowo równomiernie. Nad niemal każdą z funkcjonalności (a także opisem w dokumentacji)pracowaliśmy całym zespołem.
 
 \subsubsection{Procentowy udział poszczególnych członków zespołu w tworzeniu końcowej wersji projektu}
 $\begin{array}{|l|l|l|}
@@ -263,15 +265,18 @@ Po inkrementacji $(TC)$ następuje wyzerowanie licznika preskalera.
 
 Aby uruchomić timer należy:
 \begin{itemize}
-	\item uruchomić przesyłanie sygnału zegarowego do 32-bitowego timera o numerze zero (CT32B0) \cite{INST}: 
+	\item Uruchomić przesyłanie sygnału zegarowego do 32-bitowego timera o numerze zero (CT32B0) \cite{INST}: 
 	\begin{verbatim}
 	LPC_SYSCON->SYSAHBCLKCTRL |= (1<<9);
 	\end{verbatim}
-	\item wybrać pin 5 z portu 1 do odbierania sygnału z wejścia input 0 CT32B0 ;
-	\item ustawiamy wejście sygnału z match registrów 0 - 2 porty 1.6, 1.7, 0.1 ;
-	\item w match registrze timera ustawiamy interwał;
-	\item w match control registrze TMR32B0MCR ustawiamy \verb|0b11| - wyślij przerwanie i zresetuj jeżeli MR0 (zgodnie ze stroną 287 \cite{INST});
-	\item włączamy przerwania.
+	\item Wybrać pin 5 z portu 1 do odbierania sygnału z wejścia input 0 CT32B0 ;
+	\item Ustawiamy wejście sygnału z match registrów 0 - 2 porty 1.6, 1.7, 0.1 ;
+	\item W match registrze timera ustawiamy interwał tj. odległość między kolejnymi dopasowaniami;
+	\item W match control registrze TMR32B0MCR ustawiamy \verb|0b11| - wyślij przerwanie i zresetuj jeżeli MR0 (zgodnie ze stroną 287 \cite{INST});
+	\item Włączamy przerwania rejestrem ISER (Interrupt Set Enable Register):
+\begin{verbatim}
+NVIC->ISER[((uint32_t)(IRQn) >> 5)] = (1 << ((uint32_t)(IRQn) & 0x1F));
+\end{verbatim}
 \end{itemize}
 
 \subsection{GPIO}
@@ -353,7 +358,7 @@ Następnie w rejestrach kontroli wejścia/wyjścia ustawiamy linie MISO i MOSI n
 
 
 \subsection{I$^2$C}
-Także działa przez interfejs SSP.
+NIE działa przez interfejs SSP.
 
 \subsection{Wyświetlacz siedmiosegmentowy}
 W zaprojektowanej grze wyświetlacz siedmiosegmentowy służy jako element dekoracyjny i nie ma wpływu na rozgrywkę. Przez cały czas trwania rozgrywki wyświetla on kolejne litery napisu.
@@ -401,6 +406,12 @@ letters_state++;
 \subsection{Wyświetlacz LCD}
 
 \subsection{Przerwania (Interrupts)}
+
+\textbf{Przerwanie} to sygnał dla procesora pochodzący ze sprzętu bądź oprogramowania, informujący o zajściu zdarzenia wymagającego natychmiastowego przetworzenia. Procesor, otrzymawszy taki sygnał, zawiesza wykonywanie obecnego kodu, zachowuje swój stan, i przechodzi do przetwarzania przerwania. Nasz program wykorzystuje przerwania z zegara (\textit{timer}) w celu odtwarzania melodii niezależnie od algorytmu gry.
+
+Korzystamy z $32$-bitowego timera $1$ (CT32B1) o preskalerze ustawionym na $1$ mikrosekundę. Podczas inicjalizacji timera opisanej szczegółowo osobno w poświęconej mu sekcji, w celu włączenia pochodzących zeń przerwań ustawiamy bit zerowy i pierwszy w rejestrze \textit{Match Control Register} TMR32B1 MCR (tj. wartość liczbową \verb|0b11|), co odpowiednio oznacza, że przerwania mają być generowane przy osiągnięciu wartości MR0, oraz że timer, przy osiągnięciu tej wartości, ma być resetowany do zera. Następnie włączamy w kontrolerze przerwań (NVIC, \textit{Nested Vectored Interrupt Controller}) obsługę przerwań z $32$-bitowego timera $1$ poprzez ustawienie odpowiadającego mu dwunastego bitu w rejestrze ISER1.
+
+Przerwania użytego timera obsługiwane są przez funkcję o nazwie TIMER32_1_IRQHandler, której adres jest przechowywany w zerowym bloku pamięci RAM wraz z innymi procedurami obsługi zdarzeń. Obsługa tego przerwania zaczyna się w naszym przypadku od ustawienia zerowego bitu rejestru TMR32B1 IR w celu zresetowania przerwania. W ogólnym przypadku należałoby odczytać ów rejestr, aby ustalić rodzaj zdarzenia, i następnie ustawić bit w zależności od tego rodzaju, jednak nasz program generuje tylko jeden rodzaj przerwań z timera, więc byłoby to zbędne. Potem następuje właściwa część obsługi służąca odegraniu melodii. Ta część ustawia również rejestr MR0 na ilość czasu daną w mikrosekundach, po której powinno zajść kolejne przerwanie, co zależy od częstotliwości obecnie granej nuty lub długości obecnej pauzy.
 
 \subsection{Głośnik (GPIO) -- Melodia}
 Aby zainicjalizować głośniczek ustawiamy kierunek 
