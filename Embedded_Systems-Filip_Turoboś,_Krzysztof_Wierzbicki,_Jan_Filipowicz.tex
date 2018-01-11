@@ -210,11 +210,11 @@ Do projektu wykorzystano LPC1343 i Expansion Board.
 	 GPIO&{Jan Filipowicz}\\ \hline
 	 ADC&{Turoboś Filip}\\ \hline
 	 SPI/SSP&{Krzysztof Wierzbicki}\\ \hline
-	 I$^2$C&{Krzysztof Wierzbicki}\\ \hline
+	 I$^2$C&{Jan Filipowicz}\\ \hline
 	 Wyświetlacz siedmiosegmentowy&{Turoboś Filip}\\ \hline
 	 Wyświetlacz LCD&{Krzysztof Wierzbicki}\\ \hline
 	 Przerwania&{Jan Filipowicz}\\ \hline
-	 Melodia&{Jan Filipowicz}\\ \hline
+	 Melodia&{Krzysztof Wierzbicki}\\ \hline
 	 Akcelerometr&{Turoboś Filip}\\ \hline
 	 Czujnik światła&{Turoboś Filip}\\ \hline
 	 Diody LED -- Ekspander (PCA 9532)&{Krzysztof Wierzbicki}\\ \hline
@@ -339,7 +339,7 @@ Inicjalizacja konwertera analogowo-cyfrowego przebiega w następujący sposób:
   LPC_SYSCON->PRESETCTRL |= (0x1<<0); // zaprzestań resetowania SSP
   LPC_SYSCON->SYSAHBCLKCTRL |= (1<<11); // włącz zegar dla SSP
 \end{verbatim}
-	Dalej, ustawiany jest dzielnik częstotliwości zegara na 2:
+	Dalej, ustawiana jest częstotliwość zegara przez jako odpowiednia część częstotliwości zegara peryferalnego:
 \begin{verbatim}
   LPC_SYSCON->SSPCLKDIV = 0x02;	//dzielnik zegara peryferalnego
 \end{verbatim}
@@ -349,12 +349,31 @@ Następnie w rejestrach kontroli wejścia/wyjścia ustawiamy linie MISO i MOSI n
   LPC_IOCON->PIO0_8   |= 0x01;	// MISO
   LPC_IOCON->PIO0_9   |= 0x01;	// MOSI
   \end{verbatim}
-  Następnie ustawiamy linię SCKL - wartość 1 na porcie 2 pin 11
   Kolejnym krokiem jest ustawienie głównej płytki jako master -- 2 bit portu 0 GPIO jest wybierany jako wyjście i ustawiany jest na nim stan wysoki. 
   
-	
-	 ustawieniu prędkości transmisji oraz jej kierunku (MSB albo LSB) następuje transmisja danych, która następuje dwukierunkowo -- dane są jednocześnie wysyłane i odbierane zgodnie z sygnałem zegara po jednum bicie, w ten sposób pomiedzy rejestrami przesuwnymi mastera i slave następuje wymiana danych.
+Następnie ustawiamy linię SCKL - wartość 1 na porcie 2 pin 11.
 
+Aby można było użyć zegara na tym pinie, należy także wybrać funkcję 1 przez rejestr lokacji SCK
+\begin{verbatim}
+LPC_IOCON->SCKLOC = 0x01;
+\end{verbatim}
+
+Następnie ustawiamy DSS (Data Size Select) na transmisję 8-bitową, format ramki na SPI, polarność zegara, jego fazowość, oraz SCR (Serial Clock Rate) na 15 -- ilość sygnałów z preskalera na bit na szynie
+\begin{verbatim}
+LPC_SSP->CR0 = 0x0707;
+\end{verbatim}
+
+Ustawiamy SSP preskaler
+\begin{verbatim}
+LPC_SSP->CPSR = 0x2;
+\end{verbatim}
+
+Ostatecznie częstotliwośc SPI to 30MHz.
+
+Następnie w kontrolerze przerwań włączamy przerwania SSP.
+
+Transmisja po SPI polega na kolejno dla każdego bajtu informacji odczekaniu aż zniknie status "zajęty" (BSY) w rejestrze kontrolnym \verb|LPC_SSP->SR|,
+a następnie przesłniu do rejestru danych \verb|LPC_SSP->DR| jednego bajtu z bufora. 
 
 
 \subsection{I$^2$C}
@@ -411,7 +430,7 @@ letters_state++;
 
 Korzystamy z $32$-bitowego timera $1$ (CT32B1) o preskalerze ustawionym na $1$ mikrosekundę. Podczas inicjalizacji timera opisanej szczegółowo osobno w poświęconej mu sekcji, w celu włączenia pochodzących zeń przerwań ustawiamy bit zerowy i pierwszy w rejestrze \textit{Match Control Register} TMR32B1 MCR (tj. wartość liczbową \verb|0b11|), co odpowiednio oznacza, że przerwania mają być generowane przy osiągnięciu wartości MR0, oraz że timer, przy osiągnięciu tej wartości, ma być resetowany do zera. Następnie włączamy w kontrolerze przerwań (NVIC, \textit{Nested Vectored Interrupt Controller}) obsługę przerwań z $32$-bitowego timera $1$ poprzez ustawienie odpowiadającego mu dwunastego bitu w rejestrze ISER1.
 
-Przerwania użytego timera obsługiwane są przez funkcję o nazwie TIMER32_1_IRQHandler, której adres jest przechowywany w zerowym bloku pamięci RAM wraz z innymi procedurami obsługi zdarzeń. Obsługa tego przerwania zaczyna się w naszym przypadku od ustawienia zerowego bitu rejestru TMR32B1 IR w celu zresetowania przerwania. W ogólnym przypadku należałoby odczytać ów rejestr, aby ustalić rodzaj zdarzenia, i następnie ustawić bit w zależności od tego rodzaju, jednak nasz program generuje tylko jeden rodzaj przerwań z timera, więc byłoby to zbędne. Potem następuje właściwa część obsługi służąca odegraniu melodii. Ta część ustawia również rejestr MR0 na ilość czasu daną w mikrosekundach, po której powinno zajść kolejne przerwanie, co zależy od częstotliwości obecnie granej nuty lub długości obecnej pauzy.
+Przerwania użytego timera obsługuje funkcja \mbox{TIMER32\_1\_IRQHandler}, której adres jest przechowywany w zerowym bloku pamięci RAM wraz z innymi procedurami obsługi zdarzeń. Obsługa tego przerwania zaczyna się w naszym przypadku od ustawienia zerowego bitu rejestru TMR32B1 IR w celu zresetowania przerwania. W ogólnym przypadku należałoby odczytać ów rejestr, aby ustalić rodzaj zdarzenia, i następnie ustawić bit w zależności od tego rodzaju, jednak nasz program generuje tylko jeden rodzaj przerwań z timera, więc byłoby to zbędne. Potem następuje właściwa część obsługi służąca odegraniu melodii. Ta część ustawia również rejestr MR0 na ilość czasu daną w mikrosekundach, po której powinno zajść kolejne przerwanie, co zależy od częstotliwości obecnie granej nuty lub długości obecnej pauzy.
 
 \subsection{Głośnik (GPIO) -- Melodia}
 Aby zainicjalizować głośniczek ustawiamy kierunek 
@@ -422,7 +441,17 @@ LPC_GPIO1->DATA |= (0x1<<2)
 \subsection{Akcelerometr}
 
 \subsection{Czujnik \'Swiatła}
+Czujnik światła przyłączony jest do płytki magistralą I$^2$C \cite{LUX}. Pod adres szyny I$^2$C \verb|(0x44 << 1)| przesyłane są wartości (kolejno) \{\verb|0x00|, \verb|(1 << 7)|\}. Powoduje to ustawienie wartości $1$ na siódmym bicie rejestru Command Register. Bit ten odpowiada za uruchomienie stosownego przetwornika analogowo-cyfrowego w czujniku.
 
+Ustawiamy następnie wartości 0 i 1 na (odpowiednio) bitach o numerach 2 i 3. Sprawia to, że zakres odczytu czujnika zmieni się z domyślnych $1000$ luksów do $4000$ luksów.
+
+Odczyt czujnika światła znajduje się w rejestrach LSB\_sensor (rejestr o adresie \verb|0x04|) -- odpowiadający za dolną połowę odczytu i MSB\_sensor (rejestr o adresie \verb|0x05|), w którym znajduje się bajt górnej połowy odczytu. Przekazywany jest on do programu przez I$^2$C, a konkretnie do zmiennej nazwanej \verb|data|. Ostateczny odczyt ma wartość
+\begin{verbatim}
+ 3892 * data / (1 << 16)
+\end{verbatim}
+i wyrażony jest w luksach.
+
+W programie czujnik światła został zastosowany do zrestartowania gry w momencie, gdy odczyty natężenia oświetlenia spadną poniżej $100$ luksów (np. w wyniku zakrycia czujnika światła palcem).
 
 \section{Analiza FMEA}
 
@@ -434,10 +463,15 @@ LPC_GPIO1->DATA |= (0x1<<2)
 	\color{red}	Uszkodzenie joysticka &\color{red} \'Srednie $0.2$ &\color{red} Tak &\color{red} Wysoka $8$ &\color{red} $1.6$ \\ \hline
 	\color{red}	Uszkodzenie akcelerometru &\color{red} \'Srednie $0.3$ &\color{red} Tak &\color{red} \'Srednia $6$ &\color{red} $1.8$ \\ \hline
 	\color{black}Uszkodzenie wyświetlacza 7segmentowego & Znikome $0.01$ & Nie & Zerowa $0.1$ & $0.001$ \\ \hline
+	\color{black}Uszkodzenie pokrętła ADC & Małe $0.15$ & Nie & Mała $2$ & $0.3$ \\ \hline
 	\end{tabular}
 \end{center}
 	\subsection{Uszkodzenie wyświetlacza LCD}
 	Możliwe uszkodzenie wyświetlacza LCD spowoduje całkowitą niegrywalność. Nawet jeżeli możliwa byłaby autodiagnostyka tego przypadku, uznano że urządzenie miałoby nikłe szanse na sensowną reakcję na wypadek tego typu awarii.
+	
+	\subsection{Uszkodzenie czujnika światła}
+	Uszkodzenie czujnika światła może generować problemy dwojakiego rodzaju, z których tylko jeden ma dla nas istotne znaczenie. W przypadku gdy odczytywane wartości są zbyt wysokie (tj. czujnik nie wykrywa zmniejszenia intensywności oświetlenia) problem nie jest krytyczny dla działania układu -- niemożliwe staje się wówczas jedynie zrestartowanie gry. Uszkodzenie czujnika, które sprawi, że odczytywane wartości natężenia światła będą poniżej $100$ luksów uczyni Procesję całkowicie niegrywalną, z powodu nieprzerwanego restartowania gry. Niestety w tej sytuacji nie zostały podjęte żadne działania naprawcze.
+		
 	\subsection{Uszkodzenie akcelerometru}
 	Uszkodzenie akcelerometru może powodować błędy w zachowaniu się procesji -- mianowicie mogłoby sprawić, że kierunek poruszania się procesji zostanie ustalony i niezależnie od wykonywanych przez gracza manewrów gra nieprzerwanie próbować będzie odczytać wskazania akcelerometra i poruszać procesją zgodnie z tymi odczytami.
 	\subsubsection{Rozpoznanie}
@@ -457,6 +491,11 @@ LPC_GPIO1->DATA |= (0x1<<2)
 	
 	\subsection{Uszkodzenie wyświetlacza 7segmentowego}
 	Uszkodzenie wyświetlacza siedmiosegmentowego ma jedynie znaczenie kosmetyczne i nie wpływa w żaden sposób na działanie całości programu. W związku z tym nie zużywamy mocy obliczeniowej na sprawdzanie poprawności jego działania ani nie reagujemy na jego ewentualne uszkodzenie.
+	
+	\subsection{Uszkodzenie pokrętła ADC}
+	Uszkodzenie pokrętła nie ma dużego wpływu na rozgrywkę -- sprawia jedynie, że prędkość (a zatem poziom trudności) gry zostaje ustalona i użytkownik nie będzie miał możliwości jej modyfikacji. W przypadku ustalenia zbyt dużej prędkości gra może stać się zbyt trudna, by być satysfakcjonująca.
+	
+	Niestety, nie zostały uwzględnione metody autodiagnostyki dla tego rodzaju awarii.
 \section{Wykorzystane noty katalogowe, dokumentacja i literatura}
 		
 		\bibliographystyle{plain}
@@ -475,11 +514,17 @@ LPC_GPIO1->DATA |= (0x1<<2)
 \textit{LPC1343 ADC programming tutorial},
 	{18 November 2017},
 	\textbf{Umang Gajera}
-	
+
 \bibitem{PCA}{
 	\textit{PCA9532, 16-bit I2C-bus LED dimmer},
 	{22 August 2016}, 
 	\textbf{Rev. 4.1, Product data sheet}
+}
+
+\bibitem{LUX}{
+\textit{ISL29003 Data Sheet FN7464.6},
+{17 November 2011},
+\textbf{Intersil, Mouser Electronics}
 }
 \end{thebibliography}
 
