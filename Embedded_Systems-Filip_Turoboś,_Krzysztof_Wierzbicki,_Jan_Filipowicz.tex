@@ -320,8 +320,42 @@ Inicjalizacja konwertera analogowo-cyfrowego przebiega w następujący sposób:
 		\begin{verbatim}
 		  LPC_SYSCON->SYSAHBCLKCTRL |= (1<<13);
 		\end{verbatim}
-	\item ...nie rozumiem.
+	\item Do rejestru \verb|IOCON_PIO1_4| na pierwszych dwóch bitach wpisywana jest wartość 0x01, odpowiadająca funkcji AD5, która zwraca przez input 5 \cite{INST} oraz do \verb|JTAG_TDI_PIO0_11| wpisujemy 0x02, co odpowiada inicjalizacji funkcji AD0, zwracającej przez input 0.
+	
+	\item Konfigurujemy rejestr kontrolny przetwornika następująco:
+	\begin{verbatim}
+	 LPC_ADC->CR = ( 0x01 << 0 ) |  
+	 (((SystemCoreClock/LPC_SYSCON->SYSAHBCLKDIV)/ADC_Clk-1)<<8) |
+	 ( 0 << 16 ) | 		
+	 ( 0 << 17 ) |  		
+	 ( 0 << 22 ) |  		
+	 ( 0 << 24 ) |  		
+	\end{verbatim}
+	Poszczególne elementy konfiguracji opisane są poniżej
+	\begin{itemize}
+		\item \verb|0x01<<0| -- wybór zerowego pina (AD0) do konwersji;
+		\item \verb|(((SystemCoreClock/LPC_SYSCON->SYSAHBCLKDIV)/ADC_Clk-1)<<8)| --  dzielnik zegara dla ADC;
+		\item \verb|0<<16| -- wybór trybu kontroli oprogramowaniem (\textit{software controlled mode}), pozwalającej na wykorzystanie tylko jednego kanału (co zgadza się z naszą konfiguracją, bo jedynie pierwszy bit z pierwszego bajta tego rejestru ma wartość 1);
+		\item \verb|0<<17| -- konwersja na 10 bitów/11 cykli zegarowych;
+		\item \verb|0<<24| -- nie zaczynamy konwersji;
+	\end{itemize}
 \end{enumerate}
+Na szczególną uwagę zasługuje ustawienie dzielnika zegara dla ADC. Ponieważ w naszym przypadku wartość zmiennej ADC\_Clk wynosi $1$ MHz, to dzielnik zegara ADC wynosić będzie (współczynnik bez jednostki):
+\[
+CLKDIV = ( 60 000 000 \textrm{ Hz }/ 1 ) / 1000000\textrm{ Hz } - 1 = 59;
+\]
+
+Aby odczytać wskazanie z ADC stosujemy funkcję ADCread(0) wybieramy (w naszym wypadku) kanał zerowy i rozpoczynamy konwersję, przestawiając wartość 24 bitu rejestru kontrolnego ADC na 1, co oznacza natychmiastowe rozpoczęcie konwersji.
+\begin{verbatim}
+LPC_ADC->CR |= (1 << 24) | (1 << 0);
+\end{verbatim}
+Wynik konwersji zapisywany jest do rejestru o adresie \verb|0x4001 C010| (na bitach od 6 do 15 włącznie), a następnie do zmiennej regVal. Fakt, że odczyt się powiódł oznacza że ostatni bit ma wartość 1 (zostaje on ustawiony przy zakończeniu konwersji i wyzerowany po odczytaniu). Przy korzystaniu z trybu sprzętowego BURST, należy dodatkowo sprawdzić, czy któreś konwersje nie zostały utracone (mówi nam o tym wartość 1 na przedostatnim bicie).
+
+Ostateczny wynik odczytu, który zwracany jest przez funkcję ADCRead(0)  ma postać:
+\begin{verbatim}
+ADC_Data = ( regVal >> 6 ) & 0x3FF;
+\end{verbatim}
+przesuwamy na początek zmiennej wynik konwersji i zerujemy bity o numerach większych niż 10 (bo tyle bitów zajmuje wynik konwersji).
 
 	\subsubsection{Algorytm sukcesywnej aproksymacji $ADC$ \cite{ADCINST}}
 	Algorytm sukcesywnej aproksymacji jest w istocie sprzętową wersją przeszukiwania binarnego. Rejestr SAR (\textit{Successive Approximation Register}), do którego zapisywana bedzie odczytana z konwertera wartość jest pierwotnie zainicjalizowany samymi zerami, zaś najbardziej znaczący bit jest przestawiany na wartość $1$. Następnie wartość rejestru jest konwertowana na sygnał analogowy, po czym komparator porównuje napięcie wejściowe z konwertera z napięciem odpowiadającym ciągowi bitów z rejestru SAR. Jeżeli napięcie wejściowe w konwerterze (czyli sygnał otrzymywany dzięki ustawieniu pokrętła na odpowiedniej pozycji) przekracza wartość napięcia wygenerowanego na podstawie rejestru -- bit wiodący pozostaje w stanie $1$, w przeciwnym razie przypisana zostaje mu wartość $0$. Następnie analogiczne postępowanie zostaje przeprowadzane dla sukcesywnego bitu. Procedura powtarzana jest dziesięciokrotnie, do zapełnienia całego rejestru.
@@ -526,6 +560,14 @@ W programie czujnik światła został zastosowany do zrestartowania gry w momenc
 {17 November 2011},
 \textbf{Intersil, Mouser Electronics}
 }
+
+\bibitem{ACCEL}{
+	\textit{$\pm$2g/$\pm$4g/$\pm$8g Three Axis Low-g Digital Output Accelerometer},
+	{12/2009},
+	\textbf{Document Number: MMA7455L
+	Rev 10} 
+	}
+	
 \end{thebibliography}
 
 \end{document}
