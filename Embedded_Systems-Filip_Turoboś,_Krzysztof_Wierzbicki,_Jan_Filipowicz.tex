@@ -280,13 +280,19 @@ NVIC->ISER[((uint32_t)(IRQn) >> 5)] = (1 << ((uint32_t)(IRQn) & 0x1F));
 \end{itemize}
 
 \subsection{GPIO}
-Skrót $(GPIO)$ oznacza \textit{General purpose input/output}, czyli \textbf{interfejs wejścia /wyjścia ogólnego przeznaczenia}. Przy pomocy $(GPIO)$ obsługiwany jest joystick, w który wyposażona jest płytka. Służy on do poruszania się instancją obiektu typu wąż, umożliwiając tym samym granie w grę.
+%Skrót $(GPIO)$ oznacza \textit{General purpose input/output}, czyli \textbf{interfejs wejścia /wyjścia ogólnego przeznaczenia}. Przy pomocy $(GPIO)$ obsługiwany jest joystick, w który wyposażona jest płytka. Służy on do poruszania się instancją obiektu typu wąż, umożliwiając tym samym granie w grę.
+%
+%Aby używać joysticka musimy najpierw ustalić rolę odpowiednich pinów na \textit{INPUT}. W naszym przypadku stosowane jest port nr 2 i piny od $0$ do $4$, odpowiadających za poszczególne kierunki (odpowiednio centrum/dół/prawo/góra/lewo). 
+%
+%Posuszanie procesją polega na sprawdzaniu stanów poszczególnych pinów. Przykładowo, gdy ostatnio odczytany stan wysoki wystąpił na pinie nr 2, nasz wąż zacznie poruszać się w prawo (o ile jest to możliwe, tj. nie poruszał się uprzednio w lewo). Jeżeli nie jest odczytywany obecnie stan wysoki na żadnym z pinów, to wąż kontynuuje poruszanie się w ostatnio wybranym kierunku. W przypadku, gdy odczytany ruch jest przeciwny do obecnego, sygnał odebrany z $(GPIO)$ zostanie zignorowany.
 
-Aby używać joysticka musimy najpierw ustalić rolę odpowiednich pinów na \textit{INPUT}. W naszym przypadku stosowane jest port nr 2 i piny od $0$ do $4$, odpowiadających za poszczególne kierunki (odpowiednio centrum/dół/prawo/góra/lewo). 
+Skrót GPIO oznacza General Purpose Input/Output, czyli interfejs wejścia/wyjścia ogólnego przeznaczenia. Przy pomocy GPIO obsługiwane są joystick oraz głośnik, w które wyposażona jest płytka.
 
-Posuszanie procesją polega na sprawdzaniu stanów poszczególnych pinów. Przykładowo, gdy ostatnio odczytany stan wysoki wystąpił na pinie nr 2, nasz wąż zacznie poruszać się w prawo (o ile jest to możliwe, tj. nie poruszał się uprzednio w lewo). Jeżeli nie jest odczytywany obecnie stan wysoki na żadnym z pinów, to wąż kontynuuje poruszanie się w ostatnio wybranym kierunku. W przypadku, gdy odczytany ruch jest przeciwny do obecnego, sygnał odebrany z $(GPIO)$ zostanie zignorowany.
+Przed wykorzystaniem GPIO włączamy jego dostęp do zegara systemowego poprzez ustawienie szóstego bitu w rejestrze SYSCON SYSAHBCLKCTRL. Następnie dla każdego wykorzystanego pina ustawiamy kierunek wejścia/wyjścia. Robi się to modyfikując zawartość rejestrów GPIODIR. W zależności od portu, wybieramy rejestr GPIO0DIR, GPIO1DIR, GPIO2DIR, lub GPIO3DIR, i ustawiamy n-ty bit na wartość B, gdzie n jest wybranym numerem pina, zaś B jest równe 0, gdy chcemy skonfigurować pin jako wejście, lub 1, gdy jako wyjście. W przypadku naszego programu, joystick wykorzystujący piny od 0 do 4 portu 2 jest konfigurowany jako wejście, natomiast głośnik wykorzystujący piny 2, 9, 10 portu 1 oraz 0, 1, 2 portu 3 jest konfigurowany jako wyjście.
 
+Zapis i odczyt stanu GPIO odbywają się poprzez modyfikację i odczyt wartości rejestrów GPIODATA. Mają one podobną postać do rejestrów GPIODIR, tj. jest ich 4, po jednym na port, i każdy bit odpowiada jednemu pinowi. Wartość bitowa 1 na danej pozycji oznacza stan wysoki pina, zaś wartość 0 - stan niski.
 
+GPIO może także zostać skonfigurowane, aby generować przerwania w zależności od stanu pinów, ale ta funkcjonalność nie została przez nas użyta.
 
 %Joystick czytamy z portu 2 piny 0..4
 
@@ -411,7 +417,26 @@ a następnie przesłniu do rejestru danych \verb|LPC_SSP->DR| jednego bajtu z bu
 
 
 \subsection{I$^2$C}
-NIE działa przez interfejs SSP.
+I2C (Inter-Integrated Circuit) jest szeregową, dwukierunkową magistralą służącą przesyłowi danych. Nasz program wykorzystuje ją do komunikacji z akcelerometrem, czujnikiem światła, oraz expanderem z diodami.
+
+Program inicjalizuje I2C w trybie MASTER. W celu inicjalizacji I2C wykonujemy następujące czynności:
+W rejestrze SYSCON PRESETCTRL ustawiamy pierwszy bit, aby wyłączyć resetowanie I2C.
+W rejestrze SYSCON SYSAHBCLKCTRL ustawiamy piąty bit, aby I2C korzystało z zegara systemowego.
+W rejestrach IOCON PIO0\_4 oraz PIO0\_5 ustawiamy zerowy bit i resetujemy kolejne pięć bitów. Ma to na celu ustawić funkcjonalność pinów na odpowiednio SCL i SDA wykorzystywane przez I2C.
+W rejestrze I2C CONCLR ustawiamy bity drugi, trzeci, piąty, i szósty, co zeruje flagi rejestru I2C CONSET, przygotowując go do użycia.
+
+Ustawiamy wartości rejestrów I2C SCLL oraz SCLH na 384. Efektywnie kontrolują one czas trwania i okres impulsów SCL używanych do synchronizacji przesyłu danych. Ustawienie ich na jednakową wartość skutkuje współczynnikiem wypełnienia impulsu równym 50\%. Otrzymana częstotliwość wynosi
+\[PCLK / (SCLL + SCLH) = 72 MHz / 768 = 93.75 kHz,\]
+czyli w przybliżeniu pożądane 100 kHz.
+
+Włączamy przerwania z I2C poprzez ustawienie bitu ósmego w rejestrze NVIC ISER1.
+Wreszcie w rejestrze I2C CONSET ustawiamy szósty bit, co włącza interfejs I2C i pozwala na jego wykorzystanie.
+
+Podczas przesyłu danych w dowolnym kierunku program wykonuje następujące operacje:
+W rejestrze I2C CONSET ustawiamy piąty bit, tj. flagę startu, sygnalizującą gotowość do transferu, i oczekujemy na wywołane przezeń przerwanie.
+
+Wykorzystujemy przerwania do przesyłu kolejnych bajtów danych. Bajty są pisane do lub odczytywane z rejestru I2C DAT. Po każdej obsłudze przerwania resetujemy flagę przerwania. Odczyt lub zapis powtarzamy do momentu wyczerpania buforu przeznaczonego na wiadomość.
+W rejestrze I2C CONSET ustawiamy czwarty bit, tj. flagę stopu.
 
 \subsection{Wyświetlacz siedmiosegmentowy}
 W zaprojektowanej grze wyświetlacz siedmiosegmentowy służy jako element dekoracyjny i nie ma wpływu na rozgrywkę. Przez cały czas trwania rozgrywki wyświetla on kolejne litery napisu.
